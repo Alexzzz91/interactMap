@@ -1,0 +1,42 @@
+{
+  "name": "my-project",
+  "source": "./src/index.html",
+  "types": "./src/types/index.d.ts",
+  "scripts": {
+    "start": "parcel -p 8080",
+    "build": "parcel build ./src/index.html --out-dir ./dist --public-url /assets"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^2.3.2",
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
+    "@fontsource/sora": "^4.5.10",
+    "@hypertheme-editor/chakra-ui": "^0.2.0-dev.1",
+    "@parcel/css": "^1.13.1",
+    "effector": "^22.3.0",
+    "effector-react": "^22.1.6",
+    "framer-motion": "^7.3.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.4.0",
+    "react-svg-pan-zoom": "^3.11.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.18.13",
+    "@parcel/transformer-typescript-tsc": "2.7.0",
+    "@types/react": "^18.0.18",
+    "@typescript-eslint/eslint-plugin": "^5.36.1",
+    "@typescript-eslint/parser": "^5.36.1",
+    "babel-eslint": "^10.1.0",
+    "effector-logger": "^0.13.4",
+    "eslint": "^8.23.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-effector": "^0.8.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.31.1",
+    "parcel": "^2.7.0",
+    "prettier": "2.7.1",
+    "process": "^0.11.10",
+    "typescript": ">=3.0.0"
+  }
+}
