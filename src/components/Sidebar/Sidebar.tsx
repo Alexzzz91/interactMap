@@ -35,6 +35,7 @@ import * as classes from "./sidebar.module.css";
 import { $hasAction, $mode, $multipleMode, cursorChange, hasActionChange, modeChange, multipleModeChange } from "../../state";
 import { useThrottle } from "../../hooks/useThrottle";
 import { useStore } from "effector-react";
+import { MODES } from "../../libs/common";
 
 
 export default function SidebarWithHeader({
@@ -89,15 +90,19 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
     const panelRef = useRef<Box>(null);
 
     const handleClickLineMode = useCallback(() => {
-        
         cursorChange("crosshair");
-        modeChange("line_mode");
+        modeChange(MODES.LINE_MODE);
+    }, []);
+
+    const handleClickPartitionMode = useCallback(() => {
+        cursorChange("crosshair");
+        modeChange(MODES.PARTITION_MODE);
     }, []);
 
     const handleMultipleModeChange = useCallback(() => multipleModeChange(), []);
 
     const mouseMove = React.useCallback(() => {
-        if ((mode == "line_mode" || mode == "partition_mode") && hasAction == 1) {
+        if ((mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE) && hasAction == 1) {
           
             hasActionChange(0);
           
@@ -139,13 +144,14 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
             borderRight="1px"
             borderRightColor={useColorModeValue("gray.200", "gray.700")}
             w={{ base: "full", md: 48 }}
+            p="1"
             pos="fixed"
             h="full"
             zIndex={99}
             className={classes.aside}
             {...rest}
         >
-            <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+            <Flex h="16" alignItems="center" mx="8" justifyContent="space-between">
                 <Text fontSize="2xl" fontFamily="monospace" fontWeight="bold">
                     Logo
                 </Text>
@@ -156,30 +162,24 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                 colorScheme='teal' 
                 variant='outline'
                 className="btn btn-default fully"
-                id="line_mode" 
-                data-toggle="tooltip" 
-                data-placement="right" 
-                title="Make walls"
+                title="Сделать несущую стену"
                 onClick={handleClickLineMode}
             >
-                WALL
+                Несущая стена
             </Button>
 
-            {/* <div 
-                className="funkyradio" 
-                style={{fontSize:"0.8em"}}
+
+            <Button 
+                colorScheme='teal' 
+                variant='outline'
+                className="btn btn-default fully"
+                title="Сделать перегородку"
+                onClick={handleClickPartitionMode}
             >
-                <div className="funkyradio-success">
-                    <input type="checkbox" id="multi" checked readOnly/>
-                    <label htmlFor="multi">MULTIPLE</label>
-                </div>
-            </div> */}
-            <Checkbox isChecked={multipleMode} onChange={handleMultipleModeChange}>MULTIPLE</Checkbox>
-            {/* {LinkItems.map((link) => (
-                <NavItem key={link.name} icon={link.icon}>
-                    {link.name}
-                </NavItem>
-            ))} */}
+                Пергородка
+            </Button>
+
+            <Checkbox isChecked={multipleMode} onChange={handleMultipleModeChange}>Множество действий</Checkbox>
         </Box>
     );
 };
@@ -219,7 +219,7 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
         <Flex
             ml={{ base: 0, md: 48 }}
             px={{ base: 4, md: 4 }}
-            height="20"
+            height="14"
             zIndex={99}
             alignItems="center"
             position="relative"

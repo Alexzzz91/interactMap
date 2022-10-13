@@ -37,7 +37,6 @@ window.editorVars = {
   // grid: 20,
   // showRib: true,
   // showArea: true,
-  // meter: 60,
   // grid_snap: "off",
   // colorbackground: "#ffffff",
   // colorline: "#fff",

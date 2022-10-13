@@ -1,4 +1,3 @@
-import { meter } from "./common";
 import { clearHtmlTagById, isObjectsEquals } from "./functions";
 import { qSVG } from "./qSVG";
 
@@ -377,7 +376,7 @@ const editor = {
       }
 
       if (window.editorVars.ROOM[rr].name != "") centroid.y = centroid.y + 20;
-      let area = (window.editorVars.ROOM[rr].area / (meter * meter)).toFixed(2) + " m²";
+      let area = (window.editorVars.ROOM[rr].area / (window.editorVars.METER * window.editorVars.METER)).toFixed(2) + " m²";
       const styled = {
         color: "#343938",
         fontSize: "12.5px",
@@ -788,8 +787,8 @@ const editor = {
       let width = maxX - minX;
       let height = maxY - minY;
 
-      let labelWidth = ((maxX - minX) / meter).toFixed(2);
-      let labelHeight = ((maxY - minY) / meter).toFixed(2);
+      let labelWidth = ((maxX - minX) / window.editorVars.METER).toFixed(2);
+      let labelHeight = ((maxY - minY) / window.editorVars.METER).toFixed(2);
 
       let sideRight = "m" + (maxX + 40) + "," + minY;
 

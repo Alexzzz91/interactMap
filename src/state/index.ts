@@ -18,7 +18,57 @@ const $modeOptions = createStore("").on(modeOptionsChange, (_state, modeOptions)
 const pageMounted = createEvent();
 
 const zoomChange = createEvent<number>();
-const $zoom = createStore(0).on(zoomChange, (_state, zoom) => zoom);
+const zoomIncrement = createEvent<number>();
+const zoomDecrement = createEvent<number>();
+const zoomReset = createEvent();
+const $zoom = createStore(0)
+  .on(zoomChange, (_state, zoom) => zoom)
+  .on(zoomIncrement, (state, increment) => state += increment)
+  .on(zoomDecrement, (state, decrement) => state -= decrement)
+  .reset(zoomReset);
+
+const originXViewboxChange = createEvent<number>();
+const originXViewboxIncrement = createEvent<number>();
+const originXViewboxDecrement = createEvent<number>();
+const originXViewboxReset = createEvent();
+const $originXViewbox = createStore(-50)
+  .on(originXViewboxChange, (_state, originXViewbox) => originXViewbox)
+  .on(originXViewboxIncrement, (state, increment) => state += increment)
+  .on(originXViewboxDecrement, (state, decrement) => state -= decrement)
+  .reset(originXViewboxReset);
+
+const originYViewboxChange = createEvent<number>();
+const originYViewboxIncrement = createEvent<number>();
+const originYViewboxDecrement = createEvent<number>();
+const originYViewboxReset = createEvent();
+const $originYViewbox = createStore(-50)
+  .on(originYViewboxChange, (_state, originYViewbox) => originYViewbox)
+  .on(originYViewboxIncrement, (state, increment) => state += increment)
+  .on(originYViewboxDecrement, (state, decrement) => state -= decrement)
+  .reset(originYViewboxReset);
+
+const widthViewboxChange = createEvent<number>();
+const widthViewboxIncrement = createEvent<number>();
+const widthViewboxDecrement = createEvent<number>();
+const widthViewboxReset = createEvent();
+const $widthViewbox = createStore(0)
+  .on(widthViewboxChange, (_state, widthViewbox) => widthViewbox)
+  .on(widthViewboxIncrement, (state, increment) => state += increment)
+  .on(widthViewboxDecrement, (state, decrement) => state -= decrement)
+  .reset(widthViewboxReset);
+
+const heightViewboxChange = createEvent<number>();
+const heightViewboxReset = createEvent();
+const heightViewboxIncrement = createEvent<number>();
+const heightViewboxDecrement = createEvent<number>();
+const $heightViewbox = createStore(0)
+  .on(heightViewboxChange, (_state, heightViewbox) => heightViewbox)
+  .on(heightViewboxIncrement, (state, increment) => state += increment)
+  .on(heightViewboxDecrement, (state, decrement) => state -= decrement)
+  .reset(heightViewboxReset);
+
+const setRatioViewbox = createEvent<number>();
+const $ratioViewbox = createStore(0).on(setRatioViewbox, (_state, ratio) => ratio);
 
 const messageDeleteClicked = createEvent<{}>();
 const messageSendClicked = createEvent();
@@ -74,7 +124,34 @@ export {
     $multipleMode,
 
     zoomChange,
+    zoomIncrement,
+    zoomDecrement,
+    zoomReset,
     $zoom,
+
+    setRatioViewbox,
+    $ratioViewbox,
+
+    originXViewboxChange,
+    originXViewboxReset,
+    originXViewboxIncrement,
+    originXViewboxDecrement,
+    $originXViewbox,
+    
+    originYViewboxChange,
+    originYViewboxReset,
+    originYViewboxIncrement,
+    originYViewboxDecrement,
+    $originYViewbox,
+    
+    widthViewboxChange,
+    widthViewboxReset,
+    $widthViewbox,
+
+    heightViewboxChange,
+    heightViewboxReset,
+    $heightViewbox,
+
     modeOptionsChange,
     $modeOptions,
     hasActionChange,

@@ -1,4 +1,5 @@
 import { SnapType } from "./common.types";
+import { editor } from "./editor";
 import { qSVG } from "./qSVG";
 
 const clearHtmlTagById = (tag: string) => {
@@ -568,8 +569,8 @@ const rib = (shift = 15) => {
           }
           // CLEAR START INTO EDGE
           if (found && ribMaster[t][a].length > 2 && n == 1) {
-            var polygon = [];
-            for (var pp = 0; pp < 4; pp++) {
+            const polygon = [];
+            for (let pp = 0; pp < 4; pp++) {
               polygon.push({
                 x: window.editorVars.WALLS[ribMaster[t][a][n].crossEdge].coords[pp].x,
                 y: window.editorVars.WALLS[ribMaster[t][a][n].crossEdge].coords[pp].y,
@@ -659,6 +660,381 @@ const rib = (shift = 15) => {
   }
 };
 
+function load(index = window.editorVars.HISTORY.index, boot = false) {
+  if (window.editorVars.HISTORY.length == 0 && !boot) {
+    return false;
+  }
+  for (var k in window.editorVars.OBJDATA) {
+    window.editorVars.OBJDATA[k].graph.remove();
+  }
+  window.editorVars.OBJDATA = [];
+  let historyTemp = [];
+  historyTemp = JSON.parse(localStorage.getItem("history"));
+  historyTemp = JSON.parse(historyTemp[index]);
+
+  for (var k in historyTemp.objData) {
+    const OO = historyTemp.objData[k];
+    // if (OO.family == 'energy') OO.family = 'byObject';
+    const obj = new editor.obj2D(
+      OO.family,
+      OO.class,
+      OO.type,
+      { x: OO.x, y: OO.y },
+      OO.angle,
+      OO.angleSign,
+      OO.size,
+      (OO.hinge = "normal"),
+      OO.thick,
+      OO.value
+    );
+    obj.limit = OO.limit;
+    window.editorVars.OBJDATA.push(obj);
+
+    document.getElementById("boxcarpentry")?.append(window.editorVars.OBJDATA[window.editorVars.OBJDATA.length - 1].graph);
+    
+    obj.update();
+  }
+  window.editorVars.WALLS = historyTemp.wallData;
+  for (var k in window.editorVars.WALLS) {
+    if (window.editorVars.WALLS[k].child != null) {
+      window.editorVars.WALLS[k].child = window.editorVars.WALLS[window.editorVars.WALLS[k].child];
+    }
+
+    if (window.editorVars.WALLS[k].parent != null) {
+      window.editorVars.WALLS[k].parent = window.editorVars.WALLS[window.editorVars.WALLS[k].parent];
+    }
+  }
+
+  window.editorVars.ROOM = historyTemp.roomData;
+  editor.architect(window.editorVars.WALLS);
+  editor.showScaleBox();
+  rib();
+}
+
+const initHistory = (boot?: string) => {
+  window.editorVars.HISTORY.index = 0;
+  if (!boot && localStorage.getItem("history")){
+    localStorage.removeItem("history");
+  }
+
+  if (localStorage.getItem("history") && boot == "recovery") {
+    const historyTemp = JSON.parse(localStorage.getItem("history"));
+    load(historyTemp.length - 1, "boot");
+    save("boot");
+  }
+
+  if (boot == "newSquare") {
+    if (localStorage.getItem("history")) {
+      localStorage.removeItem("history");
+    }
+
+    window.editorVars.HISTORY.push({
+      objData: [],
+      wallData: [
+        {
+          thick: 20,
+          start: { x: 540, y: 194 },
+          end: { x: 540, y: 734 },
+          type: "normal",
+          parent: 3,
+          child: 1,
+          angle: 1.5707963267948966,
+          equations: {
+            up: { A: "v", B: 550 },
+            down: { A: "v", B: 530 },
+            base: { A: "v", B: 540 },
+          },
+          coords: [
+            { x: 550, y: 204 },
+            { x: 530, y: 184 },
+            { x: 530, y: 744 },
+            { x: 550, y: 724 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+        {
+          thick: 20,
+          start: { x: 540, y: 734 },
+          end: { x: 1080, y: 734 },
+          type: "normal",
+          parent: 0,
+          child: 2,
+          angle: 0,
+          equations: {
+            up: { A: "h", B: 724 },
+            down: { A: "h", B: 744 },
+            base: { A: "h", B: 734 },
+          },
+          coords: [
+            { x: 550, y: 724 },
+            { x: 530, y: 744 },
+            { x: 1090, y: 744 },
+            { x: 1070, y: 724 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+        {
+          thick: 20,
+          start: { x: 1080, y: 734 },
+          end: { x: 1080, y: 194 },
+          type: "normal",
+          parent: 1,
+          child: 3,
+          angle: -1.5707963267948966,
+          equations: {
+            up: { A: "v", B: 1070 },
+            down: { A: "v", B: 1090 },
+            base: { A: "v", B: 1080 },
+          },
+          coords: [
+            { x: 1070, y: 724 },
+            { x: 1090, y: 744 },
+            { x: 1090, y: 184 },
+            { x: 1070, y: 204 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+        {
+          thick: 20,
+          start: { x: 1080, y: 194 },
+          end: { x: 540, y: 194 },
+          type: "normal",
+          parent: 2,
+          child: 0,
+          angle: 3.141592653589793,
+          equations: {
+            up: { A: "h", B: 204 },
+            down: { A: "h", B: 184 },
+            base: { A: "h", B: 194 },
+          },
+          coords: [
+            { x: 1070, y: 204 },
+            { x: 1090, y: 184 },
+            { x: 530, y: 184 },
+            { x: 550, y: 204 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+      ],
+      roomData: [
+        {
+          coords: [
+            { x: 540, y: 734 },
+            { x: 1080, y: 734 },
+            { x: 1080, y: 194 },
+            { x: 540, y: 194 },
+            { x: 540, y: 734 },
+          ],
+          coordsOutside: [
+            { x: 1090, y: 744 },
+            { x: 1090, y: 184 },
+            { x: 530, y: 184 },
+            { x: 530, y: 744 },
+            { x: 1090, y: 744 },
+          ],
+          coordsInside: [
+            { x: 1070, y: 724 },
+            { x: 1070, y: 204 },
+            { x: 550, y: 204 },
+            { x: 550, y: 724 },
+            { x: 1070, y: 724 },
+          ],
+          inside: [],
+          way: ["0", "2", "3", "1", "0"],
+          area: 270400,
+          surface: "",
+          name: "",
+          color: "gradientWhite",
+          showSurface: true,
+          action: "add",
+        },
+      ],
+    });
+    window.editorVars.HISTORY[0] = JSON.stringify(window.editorVars.HISTORY[0]);
+    localStorage.setItem("history", JSON.stringify(window.editorVars.HISTORY));
+    load(0);
+    save();
+  }
+  if (boot == "newL") {
+    if (localStorage.getItem("history")) {
+      localStorage.removeItem("history");
+    }
+    window.editorVars.HISTORY.push({
+      objData: [],
+      wallData: [
+        {
+          thick: 20,
+          start: { x: 447, y: 458 },
+          end: { x: 447, y: 744 },
+          type: "normal",
+          parent: 5,
+          child: 1,
+          angle: 1.5707963267948966,
+          equations: {
+            up: { A: "v", B: 457 },
+            down: { A: "v", B: 437 },
+            base: { A: "v", B: 447 },
+          },
+          coords: [
+            { x: 457, y: 468 },
+            { x: 437, y: 448 },
+            { x: 437, y: 754 },
+            { x: 457, y: 734 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+        {
+          thick: 20,
+          start: { x: 447, y: 744 },
+          end: { x: 1347, y: 744 },
+          type: "normal",
+          parent: 0,
+          child: 2,
+          angle: 0,
+          equations: {
+            up: { A: "h", B: 734 },
+            down: { A: "h", B: 754 },
+            base: { A: "h", B: 744 },
+          },
+          coords: [
+            { x: 457, y: 734 },
+            { x: 437, y: 754 },
+            { x: 1357, y: 754 },
+            { x: 1337, y: 734 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+        {
+          thick: 20,
+          start: { x: 1347, y: 744 },
+          end: { x: 1347, y: 144 },
+          type: "normal",
+          parent: 1,
+          child: 3,
+          angle: -1.5707963267948966,
+          equations: {
+            up: { A: "v", B: 1337 },
+            down: { A: "v", B: 1357 },
+            base: { A: "v", B: 1347 },
+          },
+          coords: [
+            { x: 1337, y: 734 },
+            { x: 1357, y: 754 },
+            { x: 1357, y: 134 },
+            { x: 1337, y: 154 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+        {
+          thick: 20,
+          start: { x: 1347, y: 144 },
+          end: { x: 1020, y: 144 },
+          type: "normal",
+          parent: 2,
+          child: 4,
+          angle: 3.141592653589793,
+          equations: {
+            up: { A: "h", B: 154 },
+            down: { A: "h", B: 134 },
+            base: { A: "h", B: 144 },
+          },
+          coords: [
+            { x: 1337, y: 154 },
+            { x: 1357, y: 134 },
+            { x: 1010, y: 134 },
+            { x: 1030, y: 154 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+        {
+          thick: 20,
+          start: { x: 1020, y: 144 },
+          end: { x: 1020, y: 458 },
+          type: "normal",
+          parent: 3,
+          child: 5,
+          angle: 1.5707963267948966,
+          equations: {
+            up: { A: "v", B: 1030 },
+            down: { A: "v", B: 1010 },
+            base: { A: "v", B: 1020 },
+          },
+          coords: [
+            { x: 1030, y: 154 },
+            { x: 1010, y: 134 },
+            { x: 1010, y: 448 },
+            { x: 1030, y: 468 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+        {
+          thick: 20,
+          start: { x: 1020, y: 458 },
+          end: { x: 447, y: 458 },
+          type: "normal",
+          parent: 4,
+          child: 0,
+          angle: 3.141592653589793,
+          equations: {
+            up: { A: "h", B: 468 },
+            down: { A: "h", B: 448 },
+            base: { A: "h", B: 458 },
+          },
+          coords: [
+            { x: 1030, y: 468 },
+            { x: 1010, y: 448 },
+            { x: 437, y: 448 },
+            { x: 457, y: 468 },
+          ],
+          graph: { 0: {}, context: {}, length: 1 },
+        },
+      ],
+      roomData: [
+        {
+          coords: [
+            { x: 447, y: 744 },
+            { x: 1347, y: 744 },
+            { x: 1347, y: 144 },
+            { x: 1020, y: 144 },
+            { x: 1020, y: 458 },
+            { x: 447, y: 458 },
+            { x: 447, y: 744 },
+          ],
+          coordsOutside: [
+            { x: 1357, y: 754 },
+            { x: 1357, y: 134 },
+            { x: 1010, y: 134 },
+            { x: 1010, y: 448 },
+            { x: 437, y: 448 },
+            { x: 437, y: 754 },
+            { x: 1357, y: 754 },
+          ],
+          coordsInside: [
+            { x: 1337, y: 734 },
+            { x: 1337, y: 154 },
+            { x: 1030, y: 154 },
+            { x: 1030, y: 468 },
+            { x: 457, y: 468 },
+            { x: 457, y: 734 },
+            { x: 1337, y: 734 },
+          ],
+          inside: [],
+          way: ["0", "2", "3", "4", "5", "1", "0"],
+          area: 330478,
+          surface: "",
+          name: "",
+          color: "gradientWhite",
+          showSurface: true,
+          action: "add",
+        },
+      ],
+    });
+    window.editorVars.HISTORY[0] = JSON.stringify(window.editorVars.HISTORY[0]);
+    localStorage.setItem("history", JSON.stringify(window.editorVars.HISTORY));
+    load(0);
+    save();
+  }
+};
 
 export {
     intersection,
@@ -670,4 +1046,5 @@ export {
     isObjectsEquals,
     calcul_snap,
     rib,
+    initHistory,
 };

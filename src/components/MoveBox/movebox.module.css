@@ -1,0 +1,24 @@
+.boxShadow {
+    box-shadow: 2px 2px 3px #ccc;
+}
+
+.moveBox {
+    position: absolute;
+    z-index: 2;
+    right: 10px;
+    top: var(--chakra-sizes-16);
+    text-align: center;
+    background: transparent;
+    padding: 0px;
+    color: #fff;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-in;
+}
+
+.scaleVal {
+    margin-top: 4px;
+    height: 20px;
+    background: var(--chakra-colors-teal-500);
+    border-radius: 4px;
+    margin-right: 10px;
+}

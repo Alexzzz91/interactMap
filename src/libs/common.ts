@@ -1,5 +1,18 @@
-const meter = 60;
+export const enum MODES {
+    LINE_MODE = "line_mode",
+    PARTITION_MODE = "partition_mode",
+    SELECT_MODE = "select_mode",
+    BIND_MODE = "bind_mode",
+}
 
-export {
-    meter,
-};
+export const enum ZOOM_MODES {
+    ZOOM_OUT = "zoomout",
+    ZOOM_IN = "zoomin",
+    ZOOM_RIGHT = "zoomright",
+    ZOOM_LEFT = "zoomleft",
+    ZOOM_TOP = "zoomtop",
+    ZOOM_BOTTOM = "zoombottom",
+    ZOOM_DRAG = "zoomdrag",
+
+    ZOOM_RESET = "zoomreset",
+}

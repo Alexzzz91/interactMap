@@ -1,24 +1,123 @@
 import { useStore } from "effector-react";
 import React, { useCallback, useEffect, useRef } from "react";
 import { useThrottle } from "../../hooks/useThrottle";
+import { MODES, ZOOM_MODES } from "../../libs/common";
 import { editor } from "../../libs/editor";
 import { intersection, intersectionOff, minMoveGrid, save, rib } from "../../libs/functions";
 import { qSVG } from "../../libs/qSVG";
 import { 
   $cursor, 
   $hasAction, 
+  $heightViewbox, 
   $multipleMode, 
+  $originXViewbox, 
+  $originYViewbox, 
+  $widthViewbox, 
   cursorChange,
   hasActionChange,
+  heightViewboxChange,
+  setRatioViewbox,
+  widthViewboxChange,
 } from "../../state";
 
 const Rcirclebinder = 8;
 const gridMeausre = 20;
-const factor = 1.3093580819798918;
-const gridSnap = "on";
+let factor = 1;
+const gridSnap = "off";
 
 const WALL_SIZE = 20;
 const PARTITION_SIZE = 8;
+export const ZOOM_SPEED_MULTIPLIER = 0.065;
+
+
+let originX_viewbox;
+let originY_viewbox;
+
+let drag = 0;
+
+const zoomMaker = (lens: ZOOM_MODES, xmove: number, xview: number, zoom: number, originViewbox) => {
+  const taille = document.getElementById("lin");
+  let width_viewbox = taille?.clientWidth || 0;
+  let height_viewbox = taille?.clientHeight || 0;
+
+  if (!originX_viewbox) {
+    originX_viewbox = originViewbox.current.x;
+  }
+  if (!originY_viewbox) {
+    originY_viewbox = originViewbox.current.y;
+  }
+
+  const ratio_viewbox = height_viewbox / width_viewbox;
+
+  if (lens == ZOOM_MODES.ZOOM_OUT) {
+    zoom--;
+    width_viewbox += xmove;
+
+    // const ratioWidthZoom = taille_w / width_viewbox;
+
+    height_viewbox = width_viewbox * ratio_viewbox;
+    // myDiv = document.getElementById("scaleVal");
+    // myDiv.style.width = 60 * ratioWidthZoom + "px";
+
+    originX_viewbox = originX_viewbox - xmove / 2;
+    originY_viewbox = originY_viewbox - (xmove / 2) * ratio_viewbox;
+  }
+  if (lens == ZOOM_MODES.ZOOM_IN) {
+    zoom++;
+    width_viewbox -= xmove;
+    // const ratioWidthZoom = taille_w / width_viewbox;
+    // height_viewbox = width_viewbox * ratio_viewbox;
+    // myDiv = document.getElementById("scaleVal");
+    // myDiv.style.width = 60 * ratioWidthZoom + "px";
+
+    originX_viewbox = originX_viewbox + xmove / 2;
+    originY_viewbox = originY_viewbox + (xmove / 2) * ratio_viewbox;
+  }
+  
+  // factor = width_viewbox / (taille?.clientWidth || 0);
+
+  if (lens == ZOOM_MODES.ZOOM_RESET) {
+    originX_viewbox = 0;
+    originY_viewbox = 0;
+    factor = 1;
+  }
+  if (lens == ZOOM_MODES.ZOOM_RIGHT) {
+    originX_viewbox += xview;
+  }
+  if (lens == ZOOM_MODES.ZOOM_LEFT) {
+    originX_viewbox -= xview;
+  }
+  if (lens == ZOOM_MODES.ZOOM_TOP) {
+    originY_viewbox -= xview;
+  }
+  if (lens == ZOOM_MODES.ZOOM_BOTTOM) {
+    originY_viewbox += xview;
+  }
+  if (lens == ZOOM_MODES.ZOOM_DRAG) {
+    originX_viewbox -= xmove;
+    originY_viewbox -= xview;
+  }
+
+  // document.querySelectorAll("svg").forEach((item) => {
+  //   item.setAttribute(
+  //     "viewBox", `${originX_viewbox} ${originY_viewbox} ${width_viewbox} ${height_viewbox}`,
+  //   );
+  // });
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const calculateSnap = ({
   event,
@@ -28,6 +127,8 @@ const calculateSnap = ({
   state,
   tactile,
 }) => {
+  console.log('factor', factor);
+
   const grid = {
     x: 0, 
     y: 0,
@@ -78,12 +179,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     x: 0,
     y: 0,
   });
-  
-  const originViewbox = useRef({
-    x: -200,
-    y: -152.2041763341067,
-  });
-   
+     
   const offset = useRef({
     top: 0,
     left: 0,
@@ -99,17 +195,25 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
   const cursor = useStore($cursor);
   const multipleMode = useStore($multipleMode);
 
+  const originXViewbox = useStore($originXViewbox);
+  const originYViewbox = useStore($originYViewbox);
+  const widthViewbox = useStore($widthViewbox);
+  const heightViewbox = useStore($heightViewbox);
+
   const mouseDown = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
 
-    if (mode == "line_mode" || mode == "partition_mode") {
+    if (mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE) {
       if (hasAction == 0) {
         const snap = calculateSnap({
           event, 
           state: gridSnap,
           factor,
           offset: offset.current,
-          originViewbox: originViewbox.current,
+          originViewbox: {
+            x: originXViewbox,
+            y: originYViewbox,
+          },
           tactile,
         });
 
@@ -129,11 +233,369 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
       console.log("blяяя");
       hasActionChange(1);
     }
+
+    if (mode == MODES.SELECT_MODE) {
+      let newHasAction = hasAction;
+
+      if (
+        typeof window.editorVars.binder != "undefined" &&
+        (window.editorVars.binder.type == "segment" ||
+          window.editorVars.binder.type == "node" ||
+          window.editorVars.binder.type == "obj" ||
+          window.editorVars.binder.type == "boundingBox")
+      ) {
+        mode = MODES.BIND_MODE;
+  
+        if (window.editorVars.binder.type == "obj" || window.editorVars.binder.type == "boundingBox") {
+          newHasAction = 1;
+        }
+  
+        // INIT FOR HELP BINDER NODE MOVING H V (MOUSE DOWN)
+        if (window.editorVars.binder.type == "node") {
+          const node = window.editorVars.binder.data;
+
+          startedCursorPositon.current.x = node.x;
+          startedCursorPositon.current.y = node.y;
+
+          const nodeControl = { 
+            x: startedCursorPositon.current.x, 
+            y: startedCursorPositon.current.y,
+          };
+  
+          // DETERMINATE DISTANCE OF OPPOSED NODE ON EDGE(s) PARENT(s) OF THIS NODE !!!! NODE 1 -- NODE 2 SYSTE% :-(
+          const wallListObj = []; // SUPER VAR -- WARNING
+          let objWall;
+          const wallListRun = [];
+
+          for (let ee = window.editorVars.WALLS.length - 1; ee > -1; ee--) {
+            // SEARCH MOST YOUNG WALL COORDS IN NODE BINDER
+            if (
+              isObjectsEquals(window.editorVars.WALLS[ee].start, nodeControl) ||
+              isObjectsEquals(window.editorVars.WALLS[ee].end, nodeControl)
+            ) {
+              wallListRun.push(window.editorVars.WALLS[ee]);
+              break;
+            }
+          }
+
+          if (wallListRun[0].child != null) {
+            if (
+              isObjectsEquals(wallListRun[0].child.start, nodeControl) ||
+              isObjectsEquals(wallListRun[0].child.end, nodeControl)
+            )
+              wallListRun.push(wallListRun[0].child);
+          }
+          if (wallListRun[0].parent != null) {
+            if (
+              isObjectsEquals(wallListRun[0].parent.start, nodeControl) ||
+              isObjectsEquals(wallListRun[0].parent.end, nodeControl)
+            )
+              wallListRun.push(wallListRun[0].parent);
+          }
+  
+          for (const k in wallListRun) {
+            if (
+              isObjectsEquals(wallListRun[k].start, nodeControl) ||
+              isObjectsEquals(wallListRun[k].end, nodeControl)
+            ) {
+              let nodeTarget = wallListRun[k].start;
+              if (isObjectsEquals(wallListRun[k].start, nodeControl)) {
+                nodeTarget = wallListRun[k].end;
+              }
+              objWall = editor.objFromWall(wallListRun[k]); // LIST OBJ ON EDGE -- NOT INDEX !!!
+              wall = wallListRun[k];
+
+              for (let ob = 0; ob < objWall.length; ob++) {
+                const objTarget = objWall[ob];
+                const distance = qSVG.measure(objTarget, nodeTarget);
+                wallListObj.push({
+                  wall: wall,
+                  from: nodeTarget,
+                  distance: distance,
+                  obj: objTarget,
+                  indexObj: ob,
+                });
+              }
+            }
+          }
+
+          magnetic = 0;
+          newHasAction = 1;
+        }
+
+        // if (binder.type == "segment") {
+        //   $("#boxScale").hide(100);
+        //   var wall = binder.wall;
+        //   binder.before = binder.wall.start;
+        //   equation2 = editor.createEquationFromWall(wall);
+        //   if (wall.parent != null) {
+        //     equation1 = editor.createEquationFromWall(wall.parent);
+        //     var angle12 = qSVG.angleBetweenEquations(equation1.A, equation2.A);
+        //     if (angle12 < 20 || angle12 > 160) {
+        //       var found = true;
+        //       for (var k in WALLS) {
+        //         if (
+        //           qSVG.rayCasting(wall.start, WALLS[k].coords) &&
+        //           !isObjectsEquals(WALLS[k], wall.parent) &&
+        //           !isObjectsEquals(WALLS[k], wall)
+        //         ) {
+        //           if (
+        //             wall.parent.parent != null &&
+        //             isObjectsEquals(wall, wall.parent.parent)
+        //           )
+        //             wall.parent.parent = null;
+        //           if (
+        //             wall.parent.child != null &&
+        //             isObjectsEquals(wall, wall.parent.child)
+        //           )
+        //             wall.parent.child = null;
+        //           wall.parent = null;
+        //           found = false;
+        //           break;
+        //         }
+        //       }
+        //       if (found) {
+        //         var newWall;
+        //         if (isObjectsEquals(wall.parent.end, wall.start, "1")) {
+        //           newWall = new editor.wall(
+        //             wall.parent.end,
+        //             wall.start,
+        //             "normal",
+        //             wall.thick
+        //           );
+        //           WALLS.push(newWall);
+        //           newWall.parent = wall.parent;
+        //           newWall.child = wall;
+        //           wall.parent.child = newWall;
+        //           wall.parent = newWall;
+        //           equation1 = qSVG.perpendicularEquation(
+        //             equation2,
+        //             wall.start.x,
+        //             wall.start.y
+        //           );
+        //         } else if (isObjectsEquals(wall.parent.start, wall.start, "2")) {
+        //           newWall = new editor.wall(
+        //             wall.parent.start,
+        //             wall.start,
+        //             "normal",
+        //             wall.thick
+        //           );
+        //           WALLS.push(newWall);
+        //           newWall.parent = wall.parent;
+        //           newWall.child = wall;
+        //           wall.parent.parent = newWall;
+        //           wall.parent = newWall;
+        //           equation1 = qSVG.perpendicularEquation(
+        //             equation2,
+        //             wall.start.x,
+        //             wall.start.y
+        //           );
+        //         }
+        //         // CREATE NEW WALL
+        //       }
+        //     }
+        //   }
+        //   if (wall.parent == null) {
+        //     var foundEq = false;
+        //     for (var k in WALLS) {
+        //       if (
+        //         qSVG.rayCasting(wall.start, WALLS[k].coords) &&
+        //         !isObjectsEquals(WALLS[k].coords, wall.coords)
+        //       ) {
+        //         var angleFollow = qSVG.angleBetweenEquations(
+        //           WALLS[k].equations.base.A,
+        //           equation2.A
+        //         );
+        //         if (angleFollow < 20 || angleFollow > 160) break;
+        //         equation1 = editor.createEquationFromWall(WALLS[k]);
+        //         equation1.follow = WALLS[k];
+        //         equation1.backUp = {
+        //           coords: WALLS[k].coords,
+        //           start: WALLS[k].start,
+        //           end: WALLS[k].end,
+        //           child: WALLS[k].child,
+        //           parent: WALLS[k].parent,
+        //         };
+        //         foundEq = true;
+        //         break;
+        //       }
+        //     }
+        //     if (!foundEq)
+        //       equation1 = qSVG.perpendicularEquation(
+        //         equation2,
+        //         wall.start.x,
+        //         wall.start.y
+        //       );
+        //   }
+  
+        //   if (wall.child != null) {
+        //     equation3 = editor.createEquationFromWall(wall.child);
+        //     var angle23 = qSVG.angleBetweenEquations(equation3.A, equation2.A);
+        //     if (angle23 < 20 || angle23 > 160) {
+        //       var found = true;
+        //       for (var k in WALLS) {
+        //         if (
+        //           qSVG.rayCasting(wall.end, WALLS[k].coords) &&
+        //           !isObjectsEquals(WALLS[k], wall.child) &&
+        //           !isObjectsEquals(WALLS[k], wall)
+        //         ) {
+        //           if (
+        //             wall.child.parent != null &&
+        //             isObjectsEquals(wall, wall.child.parent)
+        //           )
+        //             wall.child.parent = null;
+        //           if (
+        //             wall.child.child != null &&
+        //             isObjectsEquals(wall, wall.child.child)
+        //           )
+        //             wall.child.child = null;
+        //           wall.child = null;
+        //           found = false;
+        //           break;
+        //         }
+        //       }
+        //       if (found) {
+        //         if (isObjectsEquals(wall.child.start, wall.end)) {
+        //           var newWall = new editor.wall(
+        //             wall.end,
+        //             wall.child.start,
+        //             "new",
+        //             wall.thick
+        //           );
+        //           WALLS.push(newWall);
+        //           newWall.parent = wall;
+        //           newWall.child = wall.child;
+        //           wall.child.parent = newWall;
+        //           wall.child = newWall;
+        //           equation3 = qSVG.perpendicularEquation(
+        //             equation2,
+        //             wall.end.x,
+        //             wall.end.y
+        //           );
+        //         } else if (isObjectsEquals(wall.child.end, wall.end)) {
+        //           var newWall = new editor.wall(
+        //             wall.end,
+        //             wall.child.end,
+        //             "normal",
+        //             wall.thick
+        //           );
+        //           WALLS.push(newWall);
+        //           newWall.parent = wall;
+        //           newWall.child = wall.child;
+        //           wall.child.child = newWall;
+        //           wall.child = newWall;
+        //           equation3 = qSVG.perpendicularEquation(
+        //             equation2,
+        //             wall.end.x,
+        //             wall.end.y
+        //           );
+        //         }
+        //         // CREATE NEW WALL
+        //       }
+        //     }
+        //   }
+        //   if (wall.child == null) {
+        //     var foundEq = false;
+        //     for (var k in WALLS) {
+        //       if (
+        //         qSVG.rayCasting(wall.end, WALLS[k].coords) &&
+        //         !isObjectsEquals(WALLS[k].coords, wall.coords, "4")
+        //       ) {
+        //         var angleFollow = qSVG.angleBetweenEquations(
+        //           WALLS[k].equations.base.A,
+        //           equation2.A
+        //         );
+        //         if (angleFollow < 20 || angleFollow > 160) break;
+        //         equation3 = editor.createEquationFromWall(WALLS[k]);
+        //         equation3.follow = WALLS[k];
+        //         equation3.backUp = {
+        //           coords: WALLS[k].coords,
+        //           start: WALLS[k].start,
+        //           end: WALLS[k].end,
+        //           child: WALLS[k].child,
+        //           parent: WALLS[k].parent,
+        //         };
+        //         foundEq = true;
+        //         break;
+        //       }
+        //     }
+        //     if (!foundEq)
+        //       equation3 = qSVG.perpendicularEquation(
+        //         equation2,
+        //         wall.end.x,
+        //         wall.end.y
+        //       );
+        //   }
+  
+        //   equationFollowers = [];
+        //   for (var k in WALLS) {
+        //     if (
+        //       WALLS[k].child == null &&
+        //       qSVG.rayCasting(WALLS[k].end, wall.coords) &&
+        //       !isObjectsEquals(wall, WALLS[k])
+        //     ) {
+        //       equationFollowers.push({
+        //         wall: WALLS[k],
+        //         eq: editor.createEquationFromWall(WALLS[k]),
+        //         type: "end",
+        //       });
+        //     }
+        //     if (
+        //       WALLS[k].parent == null &&
+        //       qSVG.rayCasting(WALLS[k].start, wall.coords) &&
+        //       !isObjectsEquals(wall, WALLS[k])
+        //     ) {
+        //       equationFollowers.push({
+        //         wall: WALLS[k],
+        //         eq: editor.createEquationFromWall(WALLS[k]),
+        //         type: "start",
+        //       });
+        //     }
+        //   }
+  
+        //   equationsObj = [];
+        //   var objWall = editor.objFromWall(wall); // LIST OBJ ON EDGE
+        //   for (var ob = 0; ob < objWall.length; ob++) {
+        //     var objTarget = objWall[ob];
+        //     equationsObj.push({
+        //       obj: objTarget,
+        //       wall: wall,
+        //       eq: qSVG.perpendicularEquation(equation2, objTarget.x, objTarget.y),
+        //     });
+        //   }
+        //   action = 1;
+        // }
+      } else {
+        newHasAction = 0;
+        drag = 1;
+
+        const snap  = calculateSnap({
+          event, 
+          state: "off",
+          factor,
+          offset: offset.current,
+          originViewbox: {
+            x: originXViewbox,
+            y: originYViewbox,
+          },
+          tactile
+        });
+
+        // если что править тута
+        startedCursorPositon.current.x = snap.xMouse;
+        startedCursorPositon.current.y = snap.yMouse;
+      }
+
+      if (newHasAction != hasAction) {
+        hasActionChange(newHasAction);
+      }
+    }
   }, [
     mode, 
     hasAction,  
     currentPositon,
-    originViewbox,
+    originXViewbox,
+    originYViewbox,
     offset,
     wallStartConstruc,
     construct,
@@ -144,13 +606,16 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     let newCursor = cursor;
     event.preventDefault();    
 
-    if ((mode == "line_mode" || mode == "partition_mode") && hasAction == 0) {
+    if ((mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE) && hasAction == 0) {
       const snap  = calculateSnap({
         event, 
         state: "off",
         factor,
         offset: offset.current,
-        originViewbox: originViewbox.current,
+        originViewbox: {
+          x: originXViewbox,
+          y: originYViewbox,
+        },
         tactile
       });
       
@@ -205,16 +670,18 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
       }
     }
   
-    if (hasAction == 1 && (mode == "line_mode" || mode == "partition_mode")) {
+    if (hasAction == 1 && (mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE)) {
       const snap = calculateSnap({
         event, 
         state: gridSnap,
         factor,
         offset: offset.current,
-        originViewbox: originViewbox.current,
+        originViewbox: {
+          x: originXViewbox,
+          y: originYViewbox,
+        },
         tactile,
       });
-
 
       currentPositon.current.x = snap.x;
       currentPositon.current.y = snap.y;
@@ -243,7 +710,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
           
           let ws = 20;
 
-          if (mode == "partition_mode") {
+          if (mode == MODES.PARTITION_MODE) {
             ws = 10;
           }
 
@@ -450,6 +917,33 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
       }
     }
 
+    if (mode == MODES.SELECT_MODE && drag === 1) {
+      const snap = calculateSnap({
+        event, 
+        state: gridSnap,
+        factor,
+        offset: offset.current,
+        originViewbox: {
+          x: originXViewbox,
+          y: originYViewbox,
+        },
+        tactile,
+      });
+
+      newCursor = "move";
+
+      const distX = (snap.xMouse - startedCursorPositon.current.x) * factor;
+      const distY = (snap.yMouse - startedCursorPositon.current.y) * factor;
+
+      // console.log("distX", distX);
+      // console.log("distY", distY);
+
+      zoomMaker(ZOOM_MODES.ZOOM_DRAG, distX, distY, 1,{
+        x: originXViewbox,
+        y: originYViewbox,
+      },);
+    }
+
     if (newCursor != cursor) {
       cursorChange(newCursor);
     }
@@ -457,7 +951,8 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     mode, 
     currentPositon ,
     startedCursorPositon,
-    originViewbox,
+    originXViewbox,
+    originYViewbox,
     offset,    
     wallStartConstruc,
     wallEndConstruc,
@@ -473,7 +968,17 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     
     event.preventDefault();
 
-    if (mode == "line_mode" || mode == "partition_mode") {
+    drag = 0;
+    newCursor = "default";
+
+    if (mode == MODES.SELECT_MODE) {
+      if (typeof window.editorVars.binder != "undefined") {
+        window.editorVars.binder.remove();
+        save();
+      }
+    }
+
+    if (mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE) {
       document.getElementById("linetemp")?.remove();
       intersectionOff();
   
@@ -492,7 +997,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
       if (document.querySelectorAll("#line_construc").length && sizeWall > 0.3) {
         sizeWall = WALL_SIZE;
 
-        if (mode == "partition_mode") {
+        if (mode == MODES.PARTITION_MODE) {
           sizeWall = PARTITION_SIZE;
         }
 
@@ -554,7 +1059,10 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
           state: gridSnap,
           factor,
           offset: offset.current,
-          originViewbox: originViewbox.current,
+          originViewbox: {
+            x: originXViewbox,
+            y: originYViewbox,
+          },
           tactile
         });
         
@@ -580,7 +1088,8 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     hasAction,
     currentPositon ,
     startedCursorPositon,
-    originViewbox,
+    originXViewbox,
+    originYViewbox,
     offset,    
     wallStartConstruc,
     wallEndConstruc,
@@ -593,19 +1102,147 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
 
   useEffect(() => {
     const taille = document.getElementById("lin");
-    const width_viewbox = taille?.clientWidth;
-    const height_viewbox = taille?.clientHeight;
+    const widthViewbox = taille?.clientWidth || 0;
+    const heightViewbox = taille?.clientHeight || 0;
 
     offset.current.top = taille?.clientTop || 0;
     offset.current.left = taille?.clientLeft || 0;
 
-    document.querySelectorAll("svg").forEach((item) => {
+    widthViewboxChange(widthViewbox);
+    heightViewboxChange(heightViewbox);
+
+    setRatioViewbox(heightViewbox / widthViewbox);
+  }, [offset]);
+
+  useEffect(() => {
+    const taille = document.getElementById("lin");
+    const tailleWidth = taille?.clientWidth || 0;
+
+    factor = widthViewbox / tailleWidth;
+
+    document.querySelectorAll("svg#lin").forEach((item) => {
       item.setAttribute(
-        "viewBox", "-200 -152.2041763341067 1693 1288.4083526682134",
-        // "viewBox", `${originViewbox.current.x || 0} ${originViewbox.current.y || 0} ${width_viewbox} ${height_viewbox}`
+        "viewBox", `${originXViewbox} ${originYViewbox} ${widthViewbox} ${heightViewbox}`
       );
     });
-  }, [offset]);
+  }, [originXViewbox, originYViewbox, widthViewbox, heightViewbox]);
+
+  const getOffset = useCallback((e: MouseEvent | Touch) => {
+    if (!ref?.current) {
+      return;
+    }
+
+    const containerRect = ref?.current.getBoundingClientRect();
+    const offsetX = e.clientX - containerRect.left;
+    const offsetY = e.clientY - containerRect.top;
+    
+    return { x: offsetX, y: offsetY };
+  }, [ref]);
+
+  const zoomTo = useCallback((x: number, y: number, ratio: number) => {
+    const { minZoom, maxZoom } = { minZoom: 1, maxZoom: 1000};
+    const { x: transformX, y: transformY, scale, angle } = {    
+      x: 0,
+      y: 0,
+      scale: 1,
+      angle: 0,
+    };
+
+    let newScale = scale * ratio;
+    if (newScale < minZoom) {
+      if (scale === minZoom) {
+        return;
+      }
+      ratio = minZoom / scale;
+      newScale = minZoom;
+    } else if (newScale > maxZoom) {
+      if (scale === maxZoom) {
+        return;
+      }
+      ratio = maxZoom / scale;
+      newScale = maxZoom;
+    }
+
+    const newX = x - ratio * (x - transformX);
+    const newY = y - ratio * (y - transformY);
+
+    console.log("newX", newX);
+    console.log("newY", newY);
+    console.log("angle", angle);
+
+    // const { boundX, boundY } = getBoundCoordinates({ x: newX, y: newY }, { angle, scale, offsetX: newX, offsetY: newY });
+    const { boundX, boundY } = {
+      boundX: 50,
+      boundY: 45
+    };
+
+    const prevPanPosition = { x: boundX, y: boundY };
+
+    console.log("prevPanPosition", prevPanPosition);
+
+    console.log("final", { x: boundX, y: boundY, scale: newScale });
+
+    // document.querySelectorAll("svg").forEach((item) => {
+    //   item.setAttribute(
+    //     "viewBox", `${originX_viewbox} ${originY_viewbox} ${width_viewbox} ${height_viewbox}`,
+    //   );
+    // });
+
+    // if (newScale> 0) {
+    //   zoomMaker(ZOOM_MODES.ZOOM_IN, boundX, boundY, newScale, originViewbox);
+    // } else {
+    //   zoomMaker(ZOOM_MODES.ZOOM_OUT, boundX, boundY, newScale, originViewbox);
+    // }
+  }, []);
+
+  const onWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+
+    const getScaleMultiplier = (delta: number, zoomSpeed = 1): number => {
+      const speed = ZOOM_SPEED_MULTIPLIER * zoomSpeed;
+      let scaleMultiplier = 1;
+      if (delta > 0) { // zoom out
+        scaleMultiplier = (1 - speed);
+      } else if (delta < 0) { // zoom in
+        scaleMultiplier = (1 + speed);
+      }
+    
+      return scaleMultiplier;
+    };
+
+    const scale = getScaleMultiplier(e.deltaY, 1);
+
+    console.log("scale", scale);
+
+   const offset = getOffset(e);
+
+   if (offset) {
+    console.log("offset", offset);
+
+    zoomTo(offset.x, offset.y, scale);
+   }
+  }, []);
+
+  useEffect(() => {
+    if (!ref?.current) {
+        return;
+    }
+
+    ref.current.addEventListener("wheel", onWheel, { passive: false });
+
+    ref.current.addEventListener("click", (event: React.MouseEvent) => {
+      event.preventDefault();
+    });
+
+    return function cleanup() {
+      ref.current?.removeEventListener("wheel", onWheel, true);
+
+      ref.current?.removeEventListener("click", (event: React.MouseEvent) => {
+        event.preventDefault();
+      });
+    };
+
+  }, [ref]);
 
   useEffect(() => {
     if (!ref?.current) {
@@ -614,22 +1251,13 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
 
     ref.current.addEventListener("mouseup", mouseUp, true);
     ref.current.addEventListener("mousemove", throttleMouseMove);
-
     ref.current.addEventListener("mousedown", mouseDown, true);
-
-    ref.current.addEventListener("click", (event: React.MouseEvent) => {
-        event.preventDefault();
-    });
 
     return function cleanup() {
       ref.current?.removeEventListener("mouseup", mouseUp, true);
       ref.current?.removeEventListener("mousemove", throttleMouseMove);
 
       ref.current?.removeEventListener("mousedown", mouseDown, true);
-
-      ref.current?.removeEventListener("click", (event: React.MouseEvent) => {
-          event.preventDefault();
-      });
     };
 
   }, [ref, mouseDown, mouseUp, throttleMouseMove]);

@@ -1,5 +1,5 @@
 // import { useEvent, useStore } from "effector-react";
-import React from "react";
+import React, { useEffect } from "react";
 
 import { Box, ChakraProvider } from "@chakra-ui/react";
 import { 
@@ -15,7 +15,7 @@ import "@fontsource/sora/800.css";
 
 // import { Boxinfo } from "./components/Boxinfo";
 import { Linear } from "./components/Linear";
-// import { MoveBox } from "./components/MoveBox";
+import { MoveBox } from "./components/MoveBox/MoveBox";
 // import { ObjBoundingBox } from "./components/ObjBoundingBox";
 // import { ObjTools } from "./components/ObjTools";
 // import { Panel } from "./components/Panel";
@@ -25,7 +25,8 @@ import SidebarWithHeader from "./components/Sidebar/Sidebar";
 // import { TextToLayer } from "./components/TextToLayer";
 // import { WallTools } from "./components/WallTools";
 // import { WelcomeModal } from "./components/Welcome";
-// import { ZoomBox } from "./components/ZoomBox";
+import { ZoomBox } from "./components/ZoomBox/ZoomBox";
+import { initHistory } from "./libs/functions";
 // import { $cursor, $mode, pageMounted } from "./state";
 
 export function App() {
@@ -40,6 +41,10 @@ export function App() {
 //     console.log("handleAppStart", handleAppStart());
 //   }, []);
 
+
+	useEffect(() => {
+		initHistory('recovery');
+	}, []);
 
 	return (
 		<ChakraProvider theme={theme}>
@@ -70,11 +75,11 @@ export function App() {
 
 						<TextToLayer />
 
-						<Boxinfo />
+						<Boxinfo /> */}
 
 						<MoveBox />
 
-						<ZoomBox /> */}
+						<ZoomBox /> 
 					</Box>
 				</SidebarWithHeader>
 

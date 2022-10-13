@@ -1,10 +1,10 @@
 {
-  "name": "my-project",
-  "source": "./src/index.html",
-  "types": "./src/types/index.d.ts",
+  "name": "map-editor",
+  "source": "src/index.html",
   "scripts": {
+    "cleanup": "rm -rf .parcel-cache dist",
     "start": "parcel -p 8080",
-    "build": "parcel build ./src/index.html --out-dir ./dist --public-url /assets"
+    "build": "npm run cleanup && parcel build src/index.html"
   },
   "dependencies": {
     "@chakra-ui/react": "^2.3.2",
