@@ -37,7 +37,6 @@ window.editorVars = {
   // grid: 20,
   // showRib: true,
   // showArea: true,
-  // grid_snap: "off",
   // colorbackground: "#ffffff",
   // colorline: "#fff",
   // colorroom: "#f0daaf",

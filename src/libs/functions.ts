@@ -106,6 +106,7 @@ const intersection = ({
     // ORANGE LINES 90° NEAR SEGMENT
     const bestEqPoint = {};
     const equation = {};
+    let eq;
   
     bestEqPoint.distance = range;
   
@@ -269,42 +270,7 @@ const isObjectsEquals = (a, b, message = false) => {
   return isOK;
 };
 
-let tactile = false;
-
-const calcul_snap = (event, state) => {
-  let x_grid;
-  let y_grid;
-  
-  if (event.touches) {
-    const touches = event.changedTouches;
-    
-    console.log("toto");
-    eX = touches[0].pageX;
-    eY = touches[0].pageY;
-    tactile = true;
-  } else {
-    eX = event.pageX;
-    eY = event.pageY;
-  }
-
-  const x_mouse = eX * window.editorVars.factor - window.editorVars.offset.left * window.editorVars.factor + window.editorVars.originX_viewbox;
-  const y_mouse = eY * window.editorVars.factor - window.editorVars.offset.top * window.editorVars.factor + window.editorVars.originY_viewbox;
-
-  if (state == "on") {
-      x_grid = Math.round(x_mouse / grid) * grid;
-      y_grid = Math.round(y_mouse / grid) * grid;
-  }
-  if (state == "off") {
-    x_grid = x_mouse;
-    y_grid = y_mouse;
-  }
-  return {
-    x: x_grid,
-    y: y_grid,
-    xMouse: x_mouse,
-    yMouse: y_mouse,
-  };
-};
+const tactile = false;
 
 const rib = (shift = 15) => {
   // return false;
@@ -1036,6 +1002,1127 @@ const initHistory = (boot?: string) => {
   }
 };
 
+const carpentryCalc = (classObj, typeObj, sizeObj, thickObj, dividerObj = 10) => {
+  const construc = [];
+  construc.params = {};
+  construc.params.bindBox = false;
+  construc.params.move = false;
+  construc.params.resize = false;
+  construc.params.resizeLimit = {};
+  construc.params.resizeLimit.width = { min: false, max: false };
+  construc.params.resizeLimit.height = { min: false, max: false };
+  construc.params.rotate = false;
+
+  if (classObj == "socle") {
+    construc.push({
+      path:
+        "M " +
+        -sizeObj / 2 +
+        "," +
+        -thickObj / 2 +
+        " L " +
+        -sizeObj / 2 +
+        "," +
+        thickObj / 2 +
+        " L " +
+        sizeObj / 2 +
+        "," +
+        thickObj / 2 +
+        " L " +
+        sizeObj / 2 +
+        "," +
+        -thickObj / 2 +
+        " Z",
+      fill: "#5cba79",
+      stroke: "#5cba79",
+      strokeDashArray: "",
+    });
+  }
+  if (classObj == "doorWindow") {
+    if (typeObj == "simple") {
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " Z",
+        fill: "#ccc",
+        stroke: "none",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          (-sizeObj - thickObj / 2) +
+          "  A" +
+          sizeObj +
+          "," +
+          sizeObj +
+          " 0 0,1 " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: colorWall,
+        strokeDashArray: "",
+      });
+      construc.params.resize = true;
+      construc.params.resizeLimit.width = { min: 40, max: 120 };
+    }
+    if (typeObj == "double") {
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " Z",
+        fill: "#ccc",
+        stroke: "none",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          (-sizeObj / 2 - thickObj / 2) +
+          "  A" +
+          sizeObj / 2 +
+          "," +
+          sizeObj / 2 +
+          " 0 0,1 0," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: colorWall,
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          (-sizeObj / 2 - thickObj / 2) +
+          "  A" +
+          sizeObj / 2 +
+          "," +
+          sizeObj / 2 +
+          " 0 0,0 0," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: colorWall,
+        strokeDashArray: "",
+      });
+      construc.params.resize = true;
+      construc.params.resizeLimit.width = { min: 40, max: 160 };
+    }
+    if (typeObj == "pocket") {
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          (-(thickObj / 2) - 4) +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          (-(thickObj / 2) - 4) +
+          " Z",
+        fill: "#ccc",
+        stroke: "none",
+        strokeDashArray: "none",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " M " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: "#494646",
+        strokeDashArray: "5 5",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          (-thickObj / 2 - 5) +
+          " L " +
+          +sizeObj / 2 +
+          "," +
+          (-thickObj / 2 - 5) +
+          " L " +
+          +sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " Z",
+        fill: "url(#hatch)",
+        stroke: "#494646",
+        strokeDashArray: "",
+      });
+      construc.params.resize = true;
+      construc.params.resizeLimit.width = { min: 60, max: 200 };
+    }
+    if (typeObj == "aperture") {
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " Z",
+        fill: "#ccc",
+        stroke: "#494646",
+        strokeDashArray: "5,5",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -(thickObj / 2) +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          (-sizeObj / 2 + 5) +
+          "," +
+          thickObj / 2 +
+          " L " +
+          (-sizeObj / 2 + 5) +
+          "," +
+          -(thickObj / 2) +
+          " Z",
+        fill: "none",
+        stroke: "#494646",
+        strokeDashArray: "none",
+      });
+      construc.push({
+        path:
+          "M " +
+          (sizeObj / 2 - 5) +
+          "," +
+          -(thickObj / 2) +
+          " L " +
+          (sizeObj / 2 - 5) +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -(thickObj / 2) +
+          " Z",
+        fill: "none",
+        stroke: "#494646",
+        strokeDashArray: "none",
+      });
+      construc.params.resize = true;
+      construc.params.resizeLimit.width = { min: 40, max: 500 };
+    }
+    if (typeObj == "fix") {
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          ",-2 L " +
+          -sizeObj / 2 +
+          ",2 L " +
+          sizeObj / 2 +
+          ",2 L " +
+          sizeObj / 2 +
+          ",-2 Z",
+        fill: "#ccc",
+        stroke: "none",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " M " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: "#ccc",
+        strokeDashArray: "",
+      });
+      construc.params.resize = true;
+      construc.params.resizeLimit.width = { min: 30, max: 300 };
+    }
+    if (typeObj == "flap") {
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          ",-2 L " +
+          -sizeObj / 2 +
+          ",2 L " +
+          sizeObj / 2 +
+          ",2 L " +
+          sizeObj / 2 +
+          ",-2 Z",
+        fill: "#ccc",
+        stroke: "none",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " M " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: "#ccc",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          (-sizeObj / 2 + sizeObj * 0.866) +
+          "," +
+          (-sizeObj / 2 - thickObj / 2) +
+          "  A" +
+          sizeObj +
+          "," +
+          sizeObj +
+          " 0 0,1 " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: colorWall,
+        strokeDashArray: "",
+      });
+      construc.params.resize = true;
+      construc.params.resizeLimit.width = { min: 20, max: 100 };
+    }
+    if (typeObj == "twin") {
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          ",-2 L " +
+          -sizeObj / 2 +
+          ",2 L " +
+          sizeObj / 2 +
+          ",2 L " +
+          sizeObj / 2 +
+          ",-2 Z",
+        fill: "#ccc",
+        stroke: "none",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " M " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: "#ccc",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          (-sizeObj / 2 + (sizeObj / 2) * 0.866) +
+          "," +
+          (-sizeObj / 4 - thickObj / 2) +
+          "  A" +
+          sizeObj / 2 +
+          "," +
+          sizeObj / 2 +
+          " 0 0,1 0," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: colorWall,
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          (sizeObj / 2 + (-sizeObj / 2) * 0.866) +
+          "," +
+          (-sizeObj / 4 - thickObj / 2) +
+          "  A" +
+          sizeObj / 2 +
+          "," +
+          sizeObj / 2 +
+          " 0 0,0 0," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: colorWall,
+        strokeDashArray: "",
+      });
+      construc.params.resize = true;
+      construc.params.resizeLimit.width = { min: 40, max: 200 };
+    }
+    if (typeObj == "bay") {
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          "," +
+          -thickObj / 2 +
+          " L " +
+          -sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " M " +
+          sizeObj / 2 +
+          "," +
+          thickObj / 2 +
+          " L " +
+          sizeObj / 2 +
+          "," +
+          -thickObj / 2,
+        fill: "none",
+        stroke: "#ccc",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M " +
+          -sizeObj / 2 +
+          ",-2 L " +
+          -sizeObj / 2 +
+          ",0 L 2,0 L 2,2 L 3,2 L 3,-2 Z",
+        fill: "#ccc",
+        stroke: "none",
+        strokeDashArray: "",
+      });
+      construc.push({
+        path:
+          "M -2,1 L -2,3 L " +
+          sizeObj / 2 +
+          ",3 L " +
+          sizeObj / 2 +
+          ",1 L -1,1 L -1,-1 L -2,-1 Z",
+        fill: "#ccc",
+        stroke: "none",
+        strokeDashArray: "",
+      });
+      construc.params.resize = true;
+      construc.params.resizeLimit.width = { min: 60, max: 300 };
+    }
+  }
+
+  // if (classObj == "measure") {
+  //   construc.params.bindBox = true;
+  //   construc.push({
+  //     path:
+  //       "M-" +
+  //       sizeObj / 2 +
+  //       ",0 l10,-10 l0,8 l" +
+  //       (sizeObj - 20) +
+  //       ",0 l0,-8 l10,10 l-10,10 l0,-8 l-" +
+  //       (sizeObj - 20) +
+  //       ",0 l0,8 Z",
+  //     fill: "#729eeb",
+  //     stroke: "none",
+  //     strokeDashArray: "",
+  //   });
+  // }
+
+  if (classObj == "boundingBox") {
+    construc.push({
+      path:
+        "M" +
+        (-sizeObj / 2 - 10) +
+        "," +
+        (-thickObj / 2 - 10) +
+        " L" +
+        (sizeObj / 2 + 10) +
+        "," +
+        (-thickObj / 2 - 10) +
+        " L" +
+        (sizeObj / 2 + 10) +
+        "," +
+        (thickObj / 2 + 10) +
+        " L" +
+        (-sizeObj / 2 - 10) +
+        "," +
+        (thickObj / 2 + 10) +
+        " Z",
+      fill: "none",
+      stroke: "#aaa",
+      strokeDashArray: "",
+    });
+
+    // construc.push({'path':"M"+dividerObj[0].x+","+dividerObj[0].y+" L"+dividerObj[1].x+","+dividerObj[1].y+" L"+dividerObj[2].x+","+dividerObj[2].y+" L"+dividerObj[3].x+","+dividerObj[3].y+" Z", 'fill':'none', 'stroke':"#000", 'strokeDashArray': ''});
+  }
+
+  // //typeObj = color  dividerObj = text
+  // if (classObj == "text") {
+  //   construc.params.bindBox = true;
+  //   construc.params.move = true;
+  //   construc.params.rotate = true;
+  //   construc.push({
+  //     text: dividerObj.text,
+  //     x: "0",
+  //     y: "0",
+  //     fill: typeObj,
+  //     stroke: typeObj,
+  //     fontSize: dividerObj.size + "px",
+  //     strokeWidth: "0px",
+  //   });
+  // }
+
+  // if (classObj == "stair") {
+  //   construc.params.bindBox = true;
+  //   construc.params.move = true;
+  //   construc.params.resize = true;
+  //   construc.params.rotate = true;
+  //   construc.params.width = 60;
+  //   construc.params.height = 180;
+  //   if (typeObj == "simpleStair") {
+  //     construc.push({
+  //       path:
+  //         "M " +
+  //         -sizeObj / 2 +
+  //         "," +
+  //         -thickObj / 2 +
+  //         " L " +
+  //         -sizeObj / 2 +
+  //         "," +
+  //         thickObj / 2 +
+  //         " L " +
+  //         sizeObj / 2 +
+  //         "," +
+  //         thickObj / 2 +
+  //         " L " +
+  //         sizeObj / 2 +
+  //         "," +
+  //         -thickObj / 2 +
+  //         " Z",
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+
+  //     var heightStep = thickObj / dividerObj;
+  //     for (var i = 1; i < dividerObj + 1; i++) {
+  //       construc.push({
+  //         path:
+  //           "M " +
+  //           -sizeObj / 2 +
+  //           "," +
+  //           (-thickObj / 2 + i * heightStep) +
+  //           " L " +
+  //           sizeObj / 2 +
+  //           "," +
+  //           (-thickObj / 2 + i * heightStep),
+  //         fill: "none",
+  //         stroke: "#000",
+  //         strokeDashArray: "none",
+  //       });
+  //     }
+  //     construc.params.resizeLimit.width = { min: 40, max: 200 };
+  //     construc.params.resizeLimit.height = { min: 40, max: 400 };
+  //   }
+  // }
+
+  // if (classObj == "energy") {
+  //   construc.params.bindBox = true;
+  //   construc.params.move = true;
+  //   construc.params.resize = false;
+  //   construc.params.rotate = false;
+  //   if (typeObj == "gtl") {
+  //     construc.push({
+  //       path: "m -20,-20 l 40,0 l0,40 l-40,0 Z",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       text: "GTL",
+  //       x: "0",
+  //       y: "5",
+  //       fill: "#333333",
+  //       stroke: "none",
+  //       fontSize: "0.9em",
+  //       strokeWidth: "0.4px",
+  //     });
+  //     construc.params.width = 40;
+  //     construc.params.height = 40;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "switch") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: qSVG.circlePath(-2, 4, 5),
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m 0,0 5,-9",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "doubleSwitch") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 4),
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m 2,-3 5,-8 3,2",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m -2,3 -5,8 -3,-2",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "dimmer") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: qSVG.circlePath(-2, 4, 5),
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m 0,0 5,-9",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M -2,-6 L 10,-4 L-2,-2 Z",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "plug") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M 10,-6 a 10,10 0 0 1 -5,8 10,10 0 0 1 -10,0 10,10 0 0 1 -5,-8",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m 0,3 v 7",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m -10,4 h 20",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "plug20") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M 10,-6 a 10,10 0 0 1 -5,8 10,10 0 0 1 -10,0 10,10 0 0 1 -5,-8",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m 0,3 v 7",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m -10,4 h 20",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       text: "20A",
+  //       x: "0",
+  //       y: "-5",
+  //       fill: "#333333",
+  //       stroke: "none",
+  //       fontSize: "0.65em",
+  //       strokeWidth: "0.4px",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "plug32") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M 10,-6 a 10,10 0 0 1 -5,8 10,10 0 0 1 -10,0 10,10 0 0 1 -5,-8",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m 0,3 v 7",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m -10,4 h 20",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       text: "32A",
+  //       x: "0",
+  //       y: "-5",
+  //       fill: "#333333",
+  //       stroke: "none",
+  //       fontSize: "0.65em",
+  //       strokeWidth: "0.4px",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "roofLight") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M -8,-8 L 8,8 M -8,8 L 8,-8",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "free";
+  //   }
+  //   if (typeObj == "wallLight") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M -8,-8 L 8,8 M -8,8 L 8,-8",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M -10,10 L 10,10",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "www") {
+  //     construc.push({
+  //       path: "m -20,-20 l 40,0 l0,40 l-40,0 Z",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       text: "@",
+  //       x: "0",
+  //       y: "4",
+  //       fill: "#333333",
+  //       stroke: "none",
+  //       fontSize: "1.2em",
+  //       strokeWidth: "0.4px",
+  //     });
+  //     construc.params.width = 40;
+  //     construc.params.height = 40;
+  //     construc.family = "free";
+  //   }
+  //   if (typeObj == "rj45") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-10,5 l0,-10 m20,0 l0,10",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m 0,5 v 7",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m -10,5 h 20",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       text: "RJ45",
+  //       x: "0",
+  //       y: "-5",
+  //       fill: "#333333",
+  //       stroke: "none",
+  //       fontSize: "0.5em",
+  //       strokeWidth: "0.4px",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "tv") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-10,5 l0-10 m20,0 l0,10",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-7,-5 l0,7 l14,0 l0,-7",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m 0,5 v 7",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m -10,5 h 20",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       text: "TV",
+  //       x: "0",
+  //       y: "-5",
+  //       fill: "#333333",
+  //       stroke: "none",
+  //       fontSize: "0.5em",
+  //       strokeWidth: "0.4px",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+
+  //   if (typeObj == "heater") {
+  //     construc.push({
+  //       path: qSVG.circlePath(0, 0, 16),
+  //       fill: "#fff",
+  //       stroke: "#000",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-15,-4 l30,0",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-14,-8 l28,0",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-11,-12 l22,0",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-16,0 l32,0",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-15,4 l30,0",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-14,8 l28,0",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "m-11,12 l22,0",
+  //       fill: "none",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.params.width = 36;
+  //     construc.params.height = 36;
+  //     construc.family = "stick";
+  //   }
+  //   if (typeObj == "radiator") {
+  //     construc.push({
+  //       path: "m -20,-10 l 40,0 l0,20 l-40,0 Z",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M -15,-10 L -15,10",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M -10,-10 L -10,10",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M -5,-10 L -5,10",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M -0,-10 L -0,10",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M 5,-10 L 5,10",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M 10,-10 L 10,10",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.push({
+  //       path: "M 15,-10 L 15,10",
+  //       fill: "#fff",
+  //       stroke: "#333",
+  //       strokeDashArray: "",
+  //     });
+  //     construc.params.width = 40;
+  //     construc.params.height = 20;
+  //     construc.family = "stick";
+  //   }
+  // }
+
+  // if (classObj == "furniture") {
+  //   construc.params.bindBox = true;
+  //   construc.params.move = true;
+  //   construc.params.resize = true;
+  //   construc.params.rotate = true;
+  // }
+
+  return construc;
+}
+
+
 export {
     intersection,
     cursor,
@@ -1044,7 +2131,7 @@ export {
     intersectionOff,
     minMoveGrid,
     isObjectsEquals,
-    calcul_snap,
     rib,
     initHistory,
+    carpentryCalc,
 };

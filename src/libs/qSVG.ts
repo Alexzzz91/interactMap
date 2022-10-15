@@ -1,5 +1,7 @@
 import { isObjectsEquals } from "./functions";
 
+let vertexTest;
+
 const qSVG = {
   create: function (id, shape, attrs) {
     const shapeElement = (document.createElementNS("http://www.w3.org/2000/svg", shape)) as HTMLElement;
@@ -1146,17 +1148,22 @@ const qSVG = {
   },
 
   rayCasting: function (point, polygon) {
-    const x = point.x,
-      y = point.y;
+    const x = point.x;
+    const y = point.y;
     let inside = false;
+
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i].x,
-        yi = polygon[i].y;
-      const xj = polygon[j].x,
-        yj = polygon[j].y;
-      const intersect =
-        yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-      if (intersect) inside = !inside;
+      const xi = polygon[i].x;
+      const yi = polygon[i].y;
+
+      const xj = polygon[j].x;
+      const yj = polygon[j].y;
+
+      const intersect = yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      
+      if (intersect) {
+        inside = !inside;
+      }
     }
     return inside;
   },

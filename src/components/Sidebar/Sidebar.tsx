@@ -32,10 +32,12 @@ import {
 } from "react-icons/fi";
 import * as classes from "./sidebar.module.css";
 // import { ReactText } from "react";
-import { $hasAction, $mode, $multipleMode, cursorChange, hasActionChange, modeChange, multipleModeChange } from "../../state";
+import { $hasAction, $mode, $multipleMode, cursorChange, hasActionChange, hasBackgroundChange, modeChange, multipleModeChange } from "../../state";
 import { useThrottle } from "../../hooks/useThrottle";
 import { useStore } from "effector-react";
 import { MODES } from "../../libs/common";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { HiCursorClick } from "react-icons/hi";
 
 
 export default function SidebarWithHeader({
@@ -89,6 +91,11 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
     const panelRef = useRef<Box>(null);
 
+    const handleClickSelectMode = useCallback(() => {
+        cursorChange("default");
+        modeChange(MODES.SELECT_MODE);
+    }, []);
+
     const handleClickLineMode = useCallback(() => {
         cursorChange("crosshair");
         modeChange(MODES.LINE_MODE);
@@ -103,24 +110,24 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
     const mouseMove = React.useCallback(() => {
         if ((mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE) && hasAction == 1) {
-          
+            
             hasActionChange(0);
-          
-          if (window.editorVars.binder) {
+            
+            if (window.editorVars.binder) {
             window.editorVars.binder.remove();
             window.editorVars.binder = undefined;
-          }
+            }
 
-          document.getElementById("linetemp")?.remove();
-          document.getElementById("line_construc")?.remove();
+            document.getElementById("linetemp")?.remove();
+            document.getElementById("line_construc")?.remove();
 
-          if (window.editorVars.lengthTemp) {
+            if (window.editorVars.lengthTemp) {
             window.editorVars.lengthTemp.remove();
-          }
+            }
 
-          window.editorVars.lengthTemp = undefined;
+            window.editorVars.lengthTemp = undefined;
         }
-    }, [mode]);
+    }, [mode, hasAction]);
 
     const throttleMouseMove = useThrottle(() => mouseMove(), 300);
 
@@ -134,7 +141,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
         return function cleanup() {
           panelRef.current?.removeEventListener("mousemove", throttleMouseMove);
         };
-    }, []);
+    }, [throttleMouseMove]);
 
     return (
         <Box
@@ -160,7 +167,18 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
             <Button 
                 colorScheme='teal' 
-                variant='outline'
+                variant={mode === MODES.SELECT_MODE ? "solid" : "outline"}
+                className="btn btn-default fully"
+                title="Режим выбора"
+                leftIcon={<HiCursorClick />}
+                onClick={handleClickSelectMode}
+            >
+                Режим выбора
+            </Button>
+
+            <Button 
+                colorScheme='teal' 
+                variant={mode === MODES.LINE_MODE ? "solid" : "outline"}
                 className="btn btn-default fully"
                 title="Сделать несущую стену"
                 onClick={handleClickLineMode}
@@ -168,10 +186,9 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                 Несущая стена
             </Button>
 
-
             <Button 
                 colorScheme='teal' 
-                variant='outline'
+                variant={mode === MODES.PARTITION_MODE ? "solid" : "outline"}
                 className="btn btn-default fully"
                 title="Сделать перегородку"
                 onClick={handleClickPartitionMode}
@@ -189,6 +206,8 @@ interface MobileProps extends FlexProps {
 }
 
 const MobileNav = ({ onOpen, ...rest }: MobileProps) => {    
+	const [_, setBackgroundImage] = useLocalStorage("backgroundImage", "");
+
     const onSelectFile = e => {
         if (!e.target.files || e.target.files.length === 0) {
             return;
@@ -207,11 +226,17 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
             document.body.appendChild(canvas);
             
             const context = canvas.getContext("2d");
+
+            if (!context) {
+                return;
+            }
+
             context.drawImage(curImg, 0, 0);    
         
             const dataURL = canvas.toDataURL("image/png");
             
-            localStorage.setItem("backgroundImage", dataURL.replace(/^data:image\/(png|jpg);base64,/, "")); // save image data
+            setBackgroundImage(dataURL.replace(/^data:image\/(png|jpg);base64,/, ""));
+            hasBackgroundChange(1);
         };
     };
 

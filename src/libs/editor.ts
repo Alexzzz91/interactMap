@@ -1,4 +1,4 @@
-import { clearHtmlTagById, isObjectsEquals } from "./functions";
+import { carpentryCalc, clearHtmlTagById, isObjectsEquals } from "./functions";
 import { qSVG } from "./qSVG";
 
 let scanStart;
@@ -40,6 +40,182 @@ const editor = {
       "fill-rule": "nonzero",
     });
     return wallScreen;
+  },
+
+  obj2D: function (
+    family,
+    classe,
+    type,
+    pos,
+    angle,
+    angleSign,
+    size,
+    hinge = "normal",
+    thick,
+    value
+  ) {
+    this.family = family; // inWall, stick, collision, free
+    this.class = classe; // door, window, energy, stair, measure, text ?
+    this.type = type; // simple, double, simpleSlide, aperture, doubleSlide, fixed, switch, lamp....
+    this.x = pos.x;
+    this.y = pos.y;
+    this.angle = angle;
+    this.angleSign = angleSign;
+    this.limit = [];
+    this.hinge = hinge; // normal, reverse
+    this.graph = qSVG.create("none", "g", {});
+    this.scale = { x: 1, y: 1 };
+    this.value = value;
+    this.size = size;
+    this.thick = thick;
+    this.width = (this.size / window.editorVars.METER).toFixed(2);
+    this.height = (this.thick / window.editorVars.METER).toFixed(2);
+
+    let cc = carpentryCalc(classe, type, size, thick, value);
+    let blank;
+
+    for (let tt = 0; tt < cc.length; tt++) {
+      if (cc[tt].path) {
+        blank = qSVG.create("none", "path", {
+          d: cc[tt].path,
+          "stroke-width": 1,
+          fill: cc[tt].fill,
+          stroke: cc[tt].stroke,
+          "stroke-dasharray": cc[tt].strokeDashArray,
+        });
+      }
+      if (cc[tt].text) {
+        blank = qSVG.create("none", "text", {
+          x: cc[tt].x,
+          y: cc[tt].y,
+          "font-size": cc[tt].fontSize,
+          stroke: cc[tt].stroke,
+          "stroke-width": cc[tt].strokeWidth,
+          "font-family": "roboto",
+          "text-anchor": "middle",
+          fill: cc[tt].fill,
+        });
+        blank.context.textContent = cc[tt].text;
+      }
+      this.graph.append(blank);
+    } // ENDFOR
+    const bbox = this.graph.get(0).getBoundingClientRect();
+    bbox.x = bbox.x * factor - offset.left * factor + originX_viewbox;
+    bbox.y = bbox.y * factor - offset.top * factor + originY_viewbox;
+    bbox.origin = { x: this.x, y: this.y };
+    this.bbox = bbox;
+    this.realBbox = [
+      { x: -this.size / 2, y: -this.thick / 2 },
+      { x: this.size / 2, y: -this.thick / 2 },
+      { x: this.size / 2, y: this.thick / 2 },
+      { x: -this.size / 2, y: this.thick / 2 },
+    ];
+    if (family == "byObject") this.family = cc.family;
+    this.params = cc.params; // (bindBox, move, resize, rotate)
+    cc.params.width ? (this.size = cc.params.width) : (this.size = size);
+    cc.params.height ? (this.thick = cc.params.height) : (this.thick = thick);
+
+    this.update = function () {
+      this.width = (this.size / meter).toFixed(2);
+      this.height = (this.thick / meter).toFixed(2);
+      cc = carpentryCalc(
+        this.class,
+        this.type,
+        this.size,
+        this.thick,
+        this.value
+      );
+      for (let tt = 0; tt < cc.length; tt++) {
+        if (cc[tt].path) {
+          this.graph.find("path")[tt].setAttribute("d", cc[tt].path);
+        } else {
+          // this.graph.find('text').context.textContent = cc[tt].text;
+        }
+      }
+      const hingeStatus = this.hinge; // normal - reverse
+      let hingeUpdate;
+      if (hingeStatus == "normal") hingeUpdate = 1;
+      else hingeUpdate = -1;
+      this.graph.attr({
+        transform:
+          "translate(" +
+          this.x +
+          "," +
+          this.y +
+          ") rotate(" +
+          this.angle +
+          ",0,0) scale(" +
+          hingeUpdate +
+          ", 1)",
+      });
+      const bbox = this.graph.get(0).getBoundingClientRect();
+      bbox.x = bbox.x * factor - offset.left * factor + originX_viewbox;
+      bbox.y = bbox.y * factor - offset.top * factor + originY_viewbox;
+      bbox.origin = { x: this.x, y: this.y };
+      this.bbox = bbox;
+
+      if (this.class == "text" && this.angle == 0) {
+        this.realBbox = [
+          { x: this.bbox.x, y: this.bbox.y },
+          { x: this.bbox.x + this.bbox.width, y: this.bbox.y },
+          {
+            x: this.bbox.x + this.bbox.width,
+            y: this.bbox.y + this.bbox.height,
+          },
+          { x: this.bbox.x, y: this.bbox.y + this.bbox.height },
+        ];
+        this.size = this.bbox.width;
+        this.thick = this.bbox.height;
+      }
+
+      const angleRadian = -this.angle * (Math.PI / 180);
+      this.realBbox = [
+        { x: -this.size / 2, y: -this.thick / 2 },
+        { x: this.size / 2, y: -this.thick / 2 },
+        { x: this.size / 2, y: this.thick / 2 },
+        { x: -this.size / 2, y: this.thick / 2 },
+      ];
+      const newRealBbox = [
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+      ];
+      newRealBbox[0].x =
+        this.realBbox[0].y * Math.sin(angleRadian) +
+        this.realBbox[0].x * Math.cos(angleRadian) +
+        this.x;
+      newRealBbox[1].x =
+        this.realBbox[1].y * Math.sin(angleRadian) +
+        this.realBbox[1].x * Math.cos(angleRadian) +
+        this.x;
+      newRealBbox[2].x =
+        this.realBbox[2].y * Math.sin(angleRadian) +
+        this.realBbox[2].x * Math.cos(angleRadian) +
+        this.x;
+      newRealBbox[3].x =
+        this.realBbox[3].y * Math.sin(angleRadian) +
+        this.realBbox[3].x * Math.cos(angleRadian) +
+        this.x;
+      newRealBbox[0].y =
+        this.realBbox[0].y * Math.cos(angleRadian) -
+        this.realBbox[0].x * Math.sin(angleRadian) +
+        this.y;
+      newRealBbox[1].y =
+        this.realBbox[1].y * Math.cos(angleRadian) -
+        this.realBbox[1].x * Math.sin(angleRadian) +
+        this.y;
+      newRealBbox[2].y =
+        this.realBbox[2].y * Math.cos(angleRadian) -
+        this.realBbox[2].x * Math.sin(angleRadian) +
+        this.y;
+      newRealBbox[3].y =
+        this.realBbox[3].y * Math.cos(angleRadian) -
+        this.realBbox[3].x * Math.sin(angleRadian) +
+        this.y;
+      this.realBbox = newRealBbox;
+      return true;
+    };
   },
 
   nearWall: ({snap, range = Infinity}): NearWallResult | false  => {
@@ -366,7 +542,7 @@ const editor = {
       const centroid = qSVG.polygonVisualCenter(window.editorVars.ROOM[rr]);
 
       if (window.editorVars.ROOM[rr].name != "") {
-        var styled = { color: "#343938" };
+        const styled = { color: "#343938" };
         if (
           window.editorVars.ROOM[rr].color == "gradientBlack" ||
           window.editorVars.ROOM[rr].color == "gradientBlue"
@@ -784,11 +960,11 @@ const editor = {
         if (!i || py > maxY) maxY = py;
       }
 
-      let width = maxX - minX;
-      let height = maxY - minY;
+      const width = maxX - minX;
+      const height = maxY - minY;
 
-      let labelWidth = ((maxX - minX) / window.editorVars.METER).toFixed(2);
-      let labelHeight = ((maxY - minY) / window.editorVars.METER).toFixed(2);
+      const labelWidth = ((maxX - minX) / window.editorVars.METER).toFixed(2);
+      const labelHeight = ((maxY - minY) / window.editorVars.METER).toFixed(2);
 
       let sideRight = "m" + (maxX + 40) + "," + minY;
 

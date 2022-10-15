@@ -24,30 +24,28 @@ import {
 import { useStore } from "effector-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { $cursor, $mode } from "../../state";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { $cursor, $hasBackground, $mode, hasBackgroundChange } from "../../state";
 import { useLinearEngine } from "./useLinearEngine";
 
 export function Linear() {
 	const linearRef = useRef(null);
+	const [backgroundImage, setBackgroundImage] = useLocalStorage("backgroundImage", "");
+	const [backgroundConfig, setItemBackgroundConfig] = useLocalStorage("backgroundConfig", "");
+
+	console.log("backgroundConfig", backgroundConfig);
+
+	const hasBackground = useStore($hasBackground);
 	const currentCursor = useStore($cursor);
 	const mode = useStore($mode);
-	const [background, setBackground] = useState<string>();
-	const [backgroundProps, setBackgroundProps] = useState({				
-		height: 0,
-		width: 0,
-		initialHeight: 0,
-		initialWidth: 0,
-		x: 200, 
-		y: 100,
-		ratio: 1,
-	});
+	const [background, setBackground] = useState<string>(backgroundImage);
+	const [backgroundProps, setBackgroundProps] = useState(backgroundConfig);
 
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const btnRef = React.useRef();
 
 	const handleOnSave = useCallback(() => {
-		localStorage.setItem("backgroundConfig", JSON.stringify(backgroundProps)); // save image data
-
+		setItemBackgroundConfig(backgroundProps);
 		onClose();
 	}, [onClose, backgroundProps]);
 
@@ -77,58 +75,39 @@ export function Linear() {
 		});
 	}, []);
 
-	// const handleChangeBackgroundHeight = useCallback((value) => {
-	// 	setBackgroundProps(prev => ({
-	// 		...prev,
-	// 		height: Number(value)
-	// 	}));
-	// }, []);
-
-	// const handleChangeBackgroundWidth = useCallback((value) => {
-	// 	setBackgroundProps(prev => ({
-	// 		...prev,
-	// 		width: Number(value)
-	// 	}));
-	// }, []);
-
 	useEffect(() => {
 		const picture = localStorage.getItem("backgroundImage");
-		const bgConfig = localStorage.getItem("backgroundConfig");
 
-		if (picture) {
-			const src = "data:image/png;base64," + picture;
+		if (!backgroundImage && picture) {
+			setBackgroundImage(picture);
+			return;
+		}
+
+		if (backgroundImage) {
+			const src = "data:image/png;base64," + JSON.parse(backgroundImage);
 			const img = new Image();
 			img.src = src;
 
-			if (bgConfig) {
-				try {
-					const bgConfigObj = JSON.parse(bgConfig);
-
+			img.onload = () => {
+				if (!backgroundConfig) {
 					setBackgroundProps({
-						height: bgConfigObj?.height || img.height,
-						width: bgConfigObj?.width || img.width,
+						height: img.height,
+						width: img.width,
 						initialHeight: img.height,
 						initialWidth: img.width,
-						x: bgConfigObj?.x || 200, 
-						y: bgConfigObj?.y || 100,
-						ratio: bgConfigObj?.ratio ||1,
+						x: 200, 
+						y: 100,
+						ratio: 1,
 					});
-				} catch (error) {}
-			} else {
-				setBackgroundProps({
-					height: img.height,
-					width: img.width,
-					initialHeight: img.height,
-					initialWidth: img.width,
-					x: 200, 
-					y: 100,
-					ratio: 1,
-				});
-			}
-
-			setBackground(src);
+				}
+				setBackground(src);
+				hasBackgroundChange(1);
+			};
+		
+		} else {
+			// hasBackgroundChange(0);
 		}
-	}, []);
+	}, [backgroundImage, backgroundConfig, hasBackground]);
   
 	useLinearEngine(linearRef, mode);
 
@@ -198,15 +177,17 @@ export function Linear() {
 						/>
 					</pattern>
 				</defs>
-				<g id="backgroundImage">
-					<image 
-						width={backgroundProps.width}
-						height={backgroundProps.height}
-						x={backgroundProps.x}
-						y={backgroundProps.y}
-						xlinkHref={background} 
-					/>
-				</g>
+				{(!!hasBackground && background) && (				
+					<g id="backgroundImage">
+						<image 
+							width={backgroundProps.width}
+							height={backgroundProps.height}
+							x={backgroundProps.x}
+							y={backgroundProps.y}
+							xlinkHref={background} 
+						/>
+					</g>
+				)}
 				<g id="boxgrid">
 					<rect
 						width="8000"
@@ -224,7 +205,7 @@ export function Linear() {
 				<g id="boxRib"></g>
 				<g id="boxScale"></g>
 			</svg>
-			{!!background && (
+			{!!hasBackground && (
 				<>
 					<Button ref={btnRef} colorScheme='teal' onClick={onOpen} zIndex='99'>
 						Настроить фоновое изображение 
@@ -309,7 +290,7 @@ export function Linear() {
 													onChange={handleChangeRatio} 
 													precision={1} 
 													min={0.1}
-													max={2}
+													max={10}
 													step={0.1}
 												>
 													<NumberInputField />

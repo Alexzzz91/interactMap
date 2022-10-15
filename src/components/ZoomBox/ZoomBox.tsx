@@ -7,10 +7,12 @@ import {
     $originXViewbox,
     $originYViewbox,
     $ratioViewbox,
+    $ratioWidthZoom,
     $widthViewbox,
     heightViewboxChange,
     originXViewboxChange,
     originYViewboxChange,
+    ratioWidthZoomChange,
     widthViewboxChange,
     zoomDecrement,
     zoomIncrement,
@@ -24,12 +26,26 @@ export function ZoomBox() {
     const originXViewbox = useStore($originXViewbox);
     const originYViewbox = useStore($originYViewbox);
     const ratioViewbox = useStore($ratioViewbox);
+    const ratioWidthZoom = useStore($ratioWidthZoom);
 
     const handleClickZoomIn = useCallback(() => {
+        const linearWidth = document.getElementById("lin")?.clientWidth;
+
         const xmove = 200;
-        zoomIncrement(-1);
+        
         const newWidthViewbox = widthViewbox - xmove;
-        const newHeightViewbox = widthViewbox * ratioViewbox;
+
+        if (newWidthViewbox < 0) {
+            return;
+        }
+
+        zoomIncrement(1);
+
+        const newHeightViewbox = newWidthViewbox * ratioViewbox;
+
+        if (linearWidth) {
+            ratioWidthZoomChange(linearWidth / newWidthViewbox);
+        }
 
         heightViewboxChange(newHeightViewbox);
         widthViewboxChange(newWidthViewbox);
@@ -39,18 +55,27 @@ export function ZoomBox() {
     }, [widthViewbox, heightViewbox, ratioViewbox, originXViewbox, originYViewbox]);
 
     const handleClickZoomOut = useCallback(() => {
+        const linearWidth = document.getElementById("lin")?.clientWidth;
+
         const xmove = 200;
 
-        zoomDecrement(1);
         const newWidthViewbox = widthViewbox + xmove;
-        const newHeightViewbox = widthViewbox * ratioViewbox;
 
+        zoomDecrement(1);
+
+        const newHeightViewbox = newWidthViewbox * ratioViewbox;
+
+        if (linearWidth) {
+            ratioWidthZoomChange(linearWidth / newWidthViewbox);
+        }
 
         heightViewboxChange(newHeightViewbox);
         widthViewboxChange(newWidthViewbox);
 
         originXViewboxChange(originXViewbox - xmove / 2);
         originYViewboxChange(originYViewbox - (xmove / 2) * ratioViewbox);
+
+
     }, [widthViewbox, heightViewbox, ratioViewbox, originXViewbox, originYViewbox]);
 
 	return (
@@ -79,7 +104,7 @@ export function ZoomBox() {
             <div 
                 id="scaleVal"  
                 className={`${classes.boxShadow} ${classes.scaleVal}`}  
-                style={{ width:"60px" }}
+                style={{ width:`${window.editorVars.METER * ratioWidthZoom}px` }}
             >
                 1m
             </div>

@@ -16,6 +16,8 @@ import {
   cursorChange,
   hasActionChange,
   heightViewboxChange,
+  originXViewboxChange,
+  originYViewboxChange,
   setRatioViewbox,
   widthViewboxChange,
 } from "../../state";
@@ -23,100 +25,13 @@ import {
 const Rcirclebinder = 8;
 const gridMeausre = 20;
 let factor = 1;
-const gridSnap = "off";
+const gridSnap = 1;
 
 const WALL_SIZE = 20;
 const PARTITION_SIZE = 8;
 export const ZOOM_SPEED_MULTIPLIER = 0.065;
 
-
-let originX_viewbox;
-let originY_viewbox;
-
 let drag = 0;
-
-const zoomMaker = (lens: ZOOM_MODES, xmove: number, xview: number, zoom: number, originViewbox) => {
-  const taille = document.getElementById("lin");
-  let width_viewbox = taille?.clientWidth || 0;
-  let height_viewbox = taille?.clientHeight || 0;
-
-  if (!originX_viewbox) {
-    originX_viewbox = originViewbox.current.x;
-  }
-  if (!originY_viewbox) {
-    originY_viewbox = originViewbox.current.y;
-  }
-
-  const ratio_viewbox = height_viewbox / width_viewbox;
-
-  if (lens == ZOOM_MODES.ZOOM_OUT) {
-    zoom--;
-    width_viewbox += xmove;
-
-    // const ratioWidthZoom = taille_w / width_viewbox;
-
-    height_viewbox = width_viewbox * ratio_viewbox;
-    // myDiv = document.getElementById("scaleVal");
-    // myDiv.style.width = 60 * ratioWidthZoom + "px";
-
-    originX_viewbox = originX_viewbox - xmove / 2;
-    originY_viewbox = originY_viewbox - (xmove / 2) * ratio_viewbox;
-  }
-  if (lens == ZOOM_MODES.ZOOM_IN) {
-    zoom++;
-    width_viewbox -= xmove;
-    // const ratioWidthZoom = taille_w / width_viewbox;
-    // height_viewbox = width_viewbox * ratio_viewbox;
-    // myDiv = document.getElementById("scaleVal");
-    // myDiv.style.width = 60 * ratioWidthZoom + "px";
-
-    originX_viewbox = originX_viewbox + xmove / 2;
-    originY_viewbox = originY_viewbox + (xmove / 2) * ratio_viewbox;
-  }
-  
-  // factor = width_viewbox / (taille?.clientWidth || 0);
-
-  if (lens == ZOOM_MODES.ZOOM_RESET) {
-    originX_viewbox = 0;
-    originY_viewbox = 0;
-    factor = 1;
-  }
-  if (lens == ZOOM_MODES.ZOOM_RIGHT) {
-    originX_viewbox += xview;
-  }
-  if (lens == ZOOM_MODES.ZOOM_LEFT) {
-    originX_viewbox -= xview;
-  }
-  if (lens == ZOOM_MODES.ZOOM_TOP) {
-    originY_viewbox -= xview;
-  }
-  if (lens == ZOOM_MODES.ZOOM_BOTTOM) {
-    originY_viewbox += xview;
-  }
-  if (lens == ZOOM_MODES.ZOOM_DRAG) {
-    originX_viewbox -= xmove;
-    originY_viewbox -= xview;
-  }
-
-  // document.querySelectorAll("svg").forEach((item) => {
-  //   item.setAttribute(
-  //     "viewBox", `${originX_viewbox} ${originY_viewbox} ${width_viewbox} ${height_viewbox}`,
-  //   );
-  // });
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 const calculateSnap = ({
@@ -127,8 +42,6 @@ const calculateSnap = ({
   state,
   tactile,
 }) => {
-  console.log('factor', factor);
-
   const grid = {
     x: 0, 
     y: 0,
@@ -154,14 +67,14 @@ const calculateSnap = ({
     y: temp.y * factor - offset.top * factor + originViewbox.y,
   };
 
-  if (state == "on") {
+  if (state) {
       grid.x = Math.round(mouse.x / gridMeausre) * gridMeausre;
       grid.y = Math.round(mouse.y / gridMeausre) * gridMeausre;
-  }
-  if (state == "off") {
+  } else {
     grid.x = mouse.x;
     grid.y = mouse.y;
   }
+
   return {
     ...grid,
     xMouse: mouse.x,
@@ -203,6 +116,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
   const mouseDown = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
 
+    
     if (mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE) {
       if (hasAction == 0) {
         const snap = calculateSnap({
@@ -571,7 +485,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
 
         const snap  = calculateSnap({
           event, 
-          state: "off",
+          state: 0,
           factor,
           offset: offset.current,
           originViewbox: {
@@ -606,10 +520,249 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     let newCursor = cursor;
     event.preventDefault();    
 
+    if (mode == MODES.SELECT_MODE && drag === 0) {
+      const snap = calculateSnap({
+        event, 
+        state: 0,
+        factor,
+        offset: offset.current,
+        originViewbox: {
+          x: originXViewbox,
+          y: originYViewbox,
+        },
+        tactile,
+      });
+  
+      let objTarget = false;
+
+      for (let i = 0; i < window.editorVars.OBJDATA.length; i++) {
+        
+        const realBboxCoords = window.editorVars.OBJDATA[i].realBbox;
+
+        if (qSVG.rayCasting(snap, realBboxCoords)) {
+          objTarget = window.editorVars.OBJDATA[i];
+        }
+      }
+
+      if (objTarget !== false) {
+        if (window.editorVars.binder && window.editorVars.binder.type == "segment") {
+          window.editorVars.binder.graph.remove();
+          window.editorVars.binder = undefined;
+          newCursor = "default";
+        }
+        if (objTarget.params.bindBox) {
+          // OBJ -> BOUNDINGBOX TOOL
+          if (!window.editorVars.binder) {
+            window.editorVars.binder = new editor.obj2D(
+              "free",
+              "boundingBox",
+              "",
+              objTarget.bbox.origin,
+              objTarget.angle,
+              0,
+              objTarget.size,
+              "normal",
+              objTarget.thick,
+              objTarget.realBbox
+            );
+            window.editorVars.binder.update();
+            window.editorVars.binder.obj = objTarget;
+            window.editorVars.binder.type = "boundingBox";
+            window.editorVars.binder.oldX = binder.x;
+            window.editorVars.binder.oldY = binder.y;
+            
+            document.getElementById("boxbind")?.append(window.editorVars.binder.graph);
+            
+            if (!objTarget.params.move) {
+              newCursor = "trash";
+            } 
+            if (objTarget.params.move) {
+              newCursor = "move";
+            }
+          }
+        } else {
+          // DOOR, WINDOW, APERTURE.. -- OBJ WITHOUT BINDBOX (params.bindBox = False) -- !!!!
+          if (!window.editorVars.binder) {
+            let wallList = editor.rayCastingWall(objTarget);
+            
+            if (wallList.length > 1) {
+              wallList = wallList[0];
+            }
+            
+            inWallRib(wallList);
+            const thickObj = wallList.thick;
+            const sizeObj = objTarget.size;
+  
+            window.editorVars.binder = new editor.obj2D(
+              "inWall",
+              "socle",
+              "",
+              objTarget,
+              objTarget.angle,
+              0,
+              sizeObj,
+              "normal",
+              thickObj,
+              ""
+            );
+
+            window.editorVars.binder.update();
+  
+            window.editorVars.binder.oldXY = { x: objTarget.x, y: objTarget.y }; // FOR OBJECT MENU
+            document.getElementById("boxbind")?.append(window.editorVars.binder.graph);
+          } else {
+            if (event.target == window.editorVars.binder.graph.get(0).firstChild) {
+              newCursor = "move";
+
+              window.editorVars.binder.graph
+                .get(0)
+                .firstChild.setAttribute("class", "circle_css_2");
+              window.editorVars.binder.type = "obj";
+              window.editorVars.binder.obj = objTarget;
+            } else {
+              newCursor = "default";
+              window.editorVars.binder.graph
+                .get(0)
+                .firstChild.setAttribute("class", "circle_css_1");
+              window.editorVars.binder.type = false;
+            }
+          }
+        }
+      } else {
+        if (window.editorVars.binder) {
+          if (window.editorVars.binder.graph) {
+            window.editorVars.binder.graph.remove();
+          } else {
+            window.editorVars.binder.remove();
+          }
+          window.editorVars.binder = undefined;
+          newCursor = "default";
+          rib();
+        }
+      }
+  
+      // // BIND CIRCLE IF nearNode and GROUP ALL SAME XY SEG POINTS
+      // if ((wallNode = editor.nearWallNode(snap, 20))) {
+      //   if (typeof binder == "undefined" || binder.type == "segment") {
+      //     binder = qSVG.create("boxbind", "circle", {
+      //       id: "circlebinder",
+      //       class: "circle_css_2",
+      //       cx: wallNode.x,
+      //       cy: wallNode.y,
+      //       r: Rcirclebinder,
+      //     });
+      //     binder.data = wallNode;
+      //     binder.type = "node";
+      //     if ($("#linebinder").length) $("#linebinder").remove();
+      //   } else {
+      //     // REMAKE CIRCLE_CSS ON BINDER AND TAKE DATA SEG GROUP
+      //     // if (typeof(binder) != 'undefined') {
+      //     //     binder.attr({
+      //     //         class: "circle_css_2"
+      //     //     });
+      //     // }
+      //   }
+      //   cursor("move");
+      // } else {
+      //   if (typeof binder != "undefined" && binder.type == "node") {
+      //     binder.remove();
+      //     delete binder;
+      //     hideAllSize();
+      //     cursor("default");
+      //     rib();
+      //   }
+      // }
+  
+      // // BIND WALL WITH NEARPOINT function ---> WALL BINDER CREATION
+      // if ((wallBind = editor.rayCastingWalls(snap, WALLS))) {
+      //   if (wallBind.length > 1) wallBind = wallBind[wallBind.length - 1];
+      //   if (wallBind && typeof binder == "undefined") {
+      //     var objWall = editor.objFromWall(wallBind);
+      //     if (objWall.length > 0) editor.inWallRib2(wallBind);
+      //     binder = {};
+      //     binder.wall = wallBind;
+      //     inWallRib(binder.wall);
+      //     var line = qSVG.create("none", "line", {
+      //       x1: binder.wall.start.x,
+      //       y1: binder.wall.start.y,
+      //       x2: binder.wall.end.x,
+      //       y2: binder.wall.end.y,
+      //       "stroke-width": 5,
+      //       stroke: "#5cba79",
+      //     });
+      //     var ball1 = qSVG.create("none", "circle", {
+      //       class: "circle_css",
+      //       cx: binder.wall.start.x,
+      //       cy: binder.wall.start.y,
+      //       r: Rcirclebinder / 1.8,
+      //     });
+      //     var ball2 = qSVG.create("none", "circle", {
+      //       class: "circle_css",
+      //       cx: binder.wall.end.x,
+      //       cy: binder.wall.end.y,
+      //       r: Rcirclebinder / 1.8,
+      //     });
+      //     binder.graph = qSVG.create("none", "g");
+      //     binder.graph.append(line);
+      //     binder.graph.append(ball1);
+      //     binder.graph.append(ball2);
+      //     $("#boxbind").append(binder.graph);
+      //     binder.type = "segment";
+      //     cursor("pointer");
+      //   }
+      // } else {
+      //   if ((wallBind = editor.nearWall(snap, 6))) {
+      //     if (wallBind && typeof binder == "undefined") {
+      //       wallBind = wallBind.wall;
+      //       var objWall = editor.objFromWall(wallBind);
+      //       if (objWall.length > 0) editor.inWallRib2(wallBind);
+      //       binder = {};
+      //       binder.wall = wallBind;
+      //       inWallRib(binder.wall);
+      //       var line = qSVG.create("none", "line", {
+      //         x1: binder.wall.start.x,
+      //         y1: binder.wall.start.y,
+      //         x2: binder.wall.end.x,
+      //         y2: binder.wall.end.y,
+      //         "stroke-width": 5,
+      //         stroke: "#5cba79",
+      //       });
+      //       var ball1 = qSVG.create("none", "circle", {
+      //         class: "circle_css",
+      //         cx: binder.wall.start.x,
+      //         cy: binder.wall.start.y,
+      //         r: Rcirclebinder / 1.8,
+      //       });
+      //       var ball2 = qSVG.create("none", "circle", {
+      //         class: "circle_css",
+      //         cx: binder.wall.end.x,
+      //         cy: binder.wall.end.y,
+      //         r: Rcirclebinder / 1.8,
+      //       });
+      //       binder.graph = qSVG.create("none", "g");
+      //       binder.graph.append(line);
+      //       binder.graph.append(ball1);
+      //       binder.graph.append(ball2);
+      //       $("#boxbind").append(binder.graph);
+      //       binder.type = "segment";
+      //       cursor("pointer");
+      //     }
+      //   } else {
+      //     if (typeof binder != "undefined" && binder.type == "segment") {
+      //       binder.graph.remove();
+      //       delete binder;
+      //       hideAllSize();
+      //       cursor("default");
+      //       rib();
+      //     }
+      //   }
+      // }
+    } 
+
     if ((mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE) && hasAction == 0) {
       const snap  = calculateSnap({
         event, 
-        state: "off",
+        state: 0,
         factor,
         offset: offset.current,
         originViewbox: {
@@ -935,13 +1088,11 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
       const distX = (snap.xMouse - startedCursorPositon.current.x) * factor;
       const distY = (snap.yMouse - startedCursorPositon.current.y) * factor;
 
-      // console.log("distX", distX);
-      // console.log("distY", distY);
+      const newOriginXViewbox = originXViewbox - distX;
+      const newOriginYViewbox = originYViewbox - distY;
 
-      zoomMaker(ZOOM_MODES.ZOOM_DRAG, distX, distY, 1,{
-        x: originXViewbox,
-        y: originYViewbox,
-      },);
+      originXViewboxChange(newOriginXViewbox);
+      originYViewboxChange(newOriginYViewbox);
     }
 
     if (newCursor != cursor) {
@@ -1127,122 +1278,122 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     });
   }, [originXViewbox, originYViewbox, widthViewbox, heightViewbox]);
 
-  const getOffset = useCallback((e: MouseEvent | Touch) => {
-    if (!ref?.current) {
-      return;
-    }
+  // const getOffset = useCallback((e: MouseEvent | Touch) => {
+  //   if (!ref?.current) {
+  //     return;
+  //   }
 
-    const containerRect = ref?.current.getBoundingClientRect();
-    const offsetX = e.clientX - containerRect.left;
-    const offsetY = e.clientY - containerRect.top;
+  //   const containerRect = ref?.current.getBoundingClientRect();
+  //   const offsetX = e.clientX - containerRect.left;
+  //   const offsetY = e.clientY - containerRect.top;
     
-    return { x: offsetX, y: offsetY };
-  }, [ref]);
+  //   return { x: offsetX, y: offsetY };
+  // }, [ref]);
 
-  const zoomTo = useCallback((x: number, y: number, ratio: number) => {
-    const { minZoom, maxZoom } = { minZoom: 1, maxZoom: 1000};
-    const { x: transformX, y: transformY, scale, angle } = {    
-      x: 0,
-      y: 0,
-      scale: 1,
-      angle: 0,
-    };
+  // const zoomTo = useCallback((x: number, y: number, ratio: number) => {
+  //   const { minZoom, maxZoom } = { minZoom: 1, maxZoom: 1000};
+  //   const { x: transformX, y: transformY, scale, angle } = {    
+  //     x: 0,
+  //     y: 0,
+  //     scale: 1,
+  //     angle: 0,
+  //   };
 
-    let newScale = scale * ratio;
-    if (newScale < minZoom) {
-      if (scale === minZoom) {
-        return;
-      }
-      ratio = minZoom / scale;
-      newScale = minZoom;
-    } else if (newScale > maxZoom) {
-      if (scale === maxZoom) {
-        return;
-      }
-      ratio = maxZoom / scale;
-      newScale = maxZoom;
-    }
+  //   let newScale = scale * ratio;
+  //   if (newScale < minZoom) {
+  //     if (scale === minZoom) {
+  //       return;
+  //     }
+  //     ratio = minZoom / scale;
+  //     newScale = minZoom;
+  //   } else if (newScale > maxZoom) {
+  //     if (scale === maxZoom) {
+  //       return;
+  //     }
+  //     ratio = maxZoom / scale;
+  //     newScale = maxZoom;
+  //   }
 
-    const newX = x - ratio * (x - transformX);
-    const newY = y - ratio * (y - transformY);
+  //   const newX = x - ratio * (x - transformX);
+  //   const newY = y - ratio * (y - transformY);
 
-    console.log("newX", newX);
-    console.log("newY", newY);
-    console.log("angle", angle);
+  //   console.log("newX", newX);
+  //   console.log("newY", newY);
+  //   console.log("angle", angle);
 
-    // const { boundX, boundY } = getBoundCoordinates({ x: newX, y: newY }, { angle, scale, offsetX: newX, offsetY: newY });
-    const { boundX, boundY } = {
-      boundX: 50,
-      boundY: 45
-    };
+  //   // const { boundX, boundY } = getBoundCoordinates({ x: newX, y: newY }, { angle, scale, offsetX: newX, offsetY: newY });
+  //   const { boundX, boundY } = {
+  //     boundX: 50,
+  //     boundY: 45
+  //   };
 
-    const prevPanPosition = { x: boundX, y: boundY };
+  //   const prevPanPosition = { x: boundX, y: boundY };
 
-    console.log("prevPanPosition", prevPanPosition);
+  //   console.log("prevPanPosition", prevPanPosition);
 
-    console.log("final", { x: boundX, y: boundY, scale: newScale });
+  //   console.log("final", { x: boundX, y: boundY, scale: newScale });
 
-    // document.querySelectorAll("svg").forEach((item) => {
-    //   item.setAttribute(
-    //     "viewBox", `${originX_viewbox} ${originY_viewbox} ${width_viewbox} ${height_viewbox}`,
-    //   );
-    // });
+  //   // document.querySelectorAll("svg").forEach((item) => {
+  //   //   item.setAttribute(
+  //   //     "viewBox", `${originX_viewbox} ${originY_viewbox} ${width_viewbox} ${height_viewbox}`,
+  //   //   );
+  //   // });
 
-    // if (newScale> 0) {
-    //   zoomMaker(ZOOM_MODES.ZOOM_IN, boundX, boundY, newScale, originViewbox);
-    // } else {
-    //   zoomMaker(ZOOM_MODES.ZOOM_OUT, boundX, boundY, newScale, originViewbox);
-    // }
-  }, []);
+  //   // if (newScale> 0) {
+  //   //   zoomMaker(ZOOM_MODES.ZOOM_IN, boundX, boundY, newScale, originViewbox);
+  //   // } else {
+  //   //   zoomMaker(ZOOM_MODES.ZOOM_OUT, boundX, boundY, newScale, originViewbox);
+  //   // }
+  // }, []);
 
-  const onWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
+  // const onWheel = useCallback((e: WheelEvent) => {
+  //   e.preventDefault();
 
-    const getScaleMultiplier = (delta: number, zoomSpeed = 1): number => {
-      const speed = ZOOM_SPEED_MULTIPLIER * zoomSpeed;
-      let scaleMultiplier = 1;
-      if (delta > 0) { // zoom out
-        scaleMultiplier = (1 - speed);
-      } else if (delta < 0) { // zoom in
-        scaleMultiplier = (1 + speed);
-      }
+  //   const getScaleMultiplier = (delta: number, zoomSpeed = 1): number => {
+  //     const speed = ZOOM_SPEED_MULTIPLIER * zoomSpeed;
+  //     let scaleMultiplier = 1;
+  //     if (delta > 0) { // zoom out
+  //       scaleMultiplier = (1 - speed);
+  //     } else if (delta < 0) { // zoom in
+  //       scaleMultiplier = (1 + speed);
+  //     }
     
-      return scaleMultiplier;
-    };
+  //     return scaleMultiplier;
+  //   };
 
-    const scale = getScaleMultiplier(e.deltaY, 1);
+  //   const scale = getScaleMultiplier(e.deltaY, 1);
 
-    console.log("scale", scale);
+  //   console.log("scale", scale);
 
-   const offset = getOffset(e);
+  //  const offset = getOffset(e);
 
-   if (offset) {
-    console.log("offset", offset);
+  //  if (offset) {
+  //   console.log("offset", offset);
 
-    zoomTo(offset.x, offset.y, scale);
-   }
-  }, []);
+  //   zoomTo(offset.x, offset.y, scale);
+  //  }
+  // }, []);
 
-  useEffect(() => {
-    if (!ref?.current) {
-        return;
-    }
+  // useEffect(() => {
+  //   if (!ref?.current) {
+  //       return;
+  //   }
 
-    ref.current.addEventListener("wheel", onWheel, { passive: false });
+  //   ref.current.addEventListener("wheel", onWheel, { passive: false });
 
-    ref.current.addEventListener("click", (event: React.MouseEvent) => {
-      event.preventDefault();
-    });
+  //   ref.current.addEventListener("click", (event: React.MouseEvent) => {
+  //     event.preventDefault();
+  //   });
 
-    return function cleanup() {
-      ref.current?.removeEventListener("wheel", onWheel, true);
+  //   return function cleanup() {
+  //     ref.current?.removeEventListener("wheel", onWheel, true);
 
-      ref.current?.removeEventListener("click", (event: React.MouseEvent) => {
-        event.preventDefault();
-      });
-    };
+  //     ref.current?.removeEventListener("click", (event: React.MouseEvent) => {
+  //       event.preventDefault();
+  //     });
+  //   };
 
-  }, [ref]);
+  // }, [ref]);
 
   useEffect(() => {
     if (!ref?.current) {

@@ -3,6 +3,12 @@ import { createEffect, createEvent, createStore, sample } from "effector";
 const cursorChange = createEvent<string>();
 const $cursor = createStore("default").on(cursorChange, (_state, newCursor) => newCursor);
 
+const hasBackgroundChange = createEvent<number>();
+const $hasBackground = createStore(0).on(hasBackgroundChange, (_state, mode) => mode);
+
+const ratioWidthZoomChange = createEvent<number>();
+const $ratioWidthZoom = createStore(1).on(ratioWidthZoomChange, (_state, ratio) => ratio);
+
 const modeChange = createEvent<string>();
 const $mode = createStore("select_mode").on(modeChange, (_state, mode) => mode);
 
@@ -21,7 +27,7 @@ const zoomChange = createEvent<number>();
 const zoomIncrement = createEvent<number>();
 const zoomDecrement = createEvent<number>();
 const zoomReset = createEvent();
-const $zoom = createStore(0)
+const $zoom = createStore(9)
   .on(zoomChange, (_state, zoom) => zoom)
   .on(zoomIncrement, (state, increment) => state += increment)
   .on(zoomDecrement, (state, decrement) => state -= decrement)
@@ -31,7 +37,7 @@ const originXViewboxChange = createEvent<number>();
 const originXViewboxIncrement = createEvent<number>();
 const originXViewboxDecrement = createEvent<number>();
 const originXViewboxReset = createEvent();
-const $originXViewbox = createStore(-50)
+const $originXViewbox = createStore(0)
   .on(originXViewboxChange, (_state, originXViewbox) => originXViewbox)
   .on(originXViewboxIncrement, (state, increment) => state += increment)
   .on(originXViewboxDecrement, (state, decrement) => state -= decrement)
@@ -41,7 +47,7 @@ const originYViewboxChange = createEvent<number>();
 const originYViewboxIncrement = createEvent<number>();
 const originYViewboxDecrement = createEvent<number>();
 const originYViewboxReset = createEvent();
-const $originYViewbox = createStore(-50)
+const $originYViewbox = createStore(0)
   .on(originYViewboxChange, (_state, originYViewbox) => originYViewbox)
   .on(originYViewboxIncrement, (state, increment) => state += increment)
   .on(originYViewboxDecrement, (state, decrement) => state -= decrement)
@@ -117,6 +123,13 @@ sample({
 export {
     cursorChange,
     $cursor,
+
+    hasBackgroundChange,
+    $hasBackground,
+
+    ratioWidthZoomChange,
+    $ratioWidthZoom,
+    
     modeChange,
     $mode,
 
