@@ -31,6 +31,6 @@ jobs:
             ${{ runner.os }}-
       - name: Build app
         run: |
-          npm ci
+          npm ci --force
           npm run build
           pm2 restart server
