@@ -11,7 +11,7 @@ app.get("/healthcheck", (req, res) => {
 });
 
 app.get("*", function(req, res){
-  res.sendfile("dist/index.html");
+  res.sendFile("dist/index.html");
 });
 
 app.listen(8080, () => {

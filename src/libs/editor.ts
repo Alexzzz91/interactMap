@@ -42,9 +42,9 @@ const editor = {
     return wallScreen;
   },
 
-  obj2D: function (
+  obj2D: function ({
     family,
-    classe,
+    className,
     type,
     pos,
     angle,
@@ -52,10 +52,14 @@ const editor = {
     size,
     hinge = "normal",
     thick,
-    value
+    value,
+    offset,
+    originXViewbox,
+    originYViewbox,
+  }
   ) {
     this.family = family; // inWall, stick, collision, free
-    this.class = classe; // door, window, energy, stair, measure, text ?
+    this.class = className; // door, window, energy, stair, measure, text ?
     this.type = type; // simple, double, simpleSlide, aperture, doubleSlide, fixed, switch, lamp....
     this.x = pos.x;
     this.y = pos.y;
@@ -71,7 +75,7 @@ const editor = {
     this.width = (this.size / window.editorVars.METER).toFixed(2);
     this.height = (this.thick / window.editorVars.METER).toFixed(2);
 
-    let cc = carpentryCalc(classe, type, size, thick, value);
+    let cc = carpentryCalc(className, type, size, thick, value);
     let blank;
 
     for (let tt = 0; tt < cc.length; tt++) {
@@ -98,10 +102,12 @@ const editor = {
         blank.context.textContent = cc[tt].text;
       }
       this.graph.append(blank);
-    } // ENDFOR
-    const bbox = this.graph.get(0).getBoundingClientRect();
-    bbox.x = bbox.x * factor - offset.left * factor + originX_viewbox;
-    bbox.y = bbox.y * factor - offset.top * factor + originY_viewbox;
+    } // ENDFOR  
+
+    const bbox = this.graph.getBoundingClientRect();
+
+    bbox.x = bbox.x * window.editorVars.factor - offset.left * window.editorVars.factor + originXViewbox;
+    bbox.y = bbox.y * window.editorVars.factor - offset.top * window.editorVars.factor + originYViewbox;
     bbox.origin = { x: this.x, y: this.y };
     this.bbox = bbox;
     this.realBbox = [
@@ -110,14 +116,18 @@ const editor = {
       { x: this.size / 2, y: this.thick / 2 },
       { x: -this.size / 2, y: this.thick / 2 },
     ];
-    if (family == "byObject") this.family = cc.family;
+
+    if (family == "byObject") {
+      this.family = cc.family;
+    }
+
     this.params = cc.params; // (bindBox, move, resize, rotate)
     cc.params.width ? (this.size = cc.params.width) : (this.size = size);
     cc.params.height ? (this.thick = cc.params.height) : (this.thick = thick);
 
     this.update = function () {
-      this.width = (this.size / meter).toFixed(2);
-      this.height = (this.thick / meter).toFixed(2);
+      this.width = (this.size / window.editorVars.METER).toFixed(2);
+      this.height = (this.thick / window.editorVars.METER).toFixed(2);
       cc = carpentryCalc(
         this.class,
         this.type,
@@ -127,30 +137,22 @@ const editor = {
       );
       for (let tt = 0; tt < cc.length; tt++) {
         if (cc[tt].path) {
-          this.graph.find("path")[tt].setAttribute("d", cc[tt].path);
+          this.graph.getElementsByTagName("path")[tt].setAttribute("d", cc[tt].path);
         } else {
-          // this.graph.find('text').context.textContent = cc[tt].text;
+          this.graph.find("text").context.textContent = cc[tt].text;
         }
       }
       const hingeStatus = this.hinge; // normal - reverse
       let hingeUpdate;
       if (hingeStatus == "normal") hingeUpdate = 1;
       else hingeUpdate = -1;
-      this.graph.attr({
-        transform:
-          "translate(" +
-          this.x +
-          "," +
-          this.y +
-          ") rotate(" +
-          this.angle +
-          ",0,0) scale(" +
-          hingeUpdate +
-          ", 1)",
-      });
-      const bbox = this.graph.get(0).getBoundingClientRect();
-      bbox.x = bbox.x * factor - offset.left * factor + originX_viewbox;
-      bbox.y = bbox.y * factor - offset.top * factor + originY_viewbox;
+      this.graph.setAttribute(
+        "transform",
+        `translate(${this.x},${this.y}) rotate(${this.angle},0,0) scale(${hingeUpdate}, 1)`
+      );
+      const bbox = this.graph.getBoundingClientRect();
+      bbox.x = bbox.x * window.editorVars.factor - offset.left * window.editorVars.factor + originXViewbox;
+      bbox.y = bbox.y * window.editorVars.factor - offset.top * window.editorVars.factor + originYViewbox;
       bbox.origin = { x: this.x, y: this.y };
       this.bbox = bbox;
 
@@ -1011,6 +1013,220 @@ const editor = {
       text.textContent = labelWidth + " m";
 
       document.getElementById("boxScale")?.append(text);
+    }
+  },
+
+  rayCastingWall: function (snap) {
+    const wallList = [];
+    for (let i = 0; i < window.editorVars.WALLS.length; i++) {
+      const polygon = [];
+      for (let pp = 0; pp < 4; pp++) {
+        polygon.push({ x: window.editorVars.WALLS[i].coords[pp].x, y: window.editorVars.WALLS[i].coords[pp].y }); // FOR Z
+      }
+      if (qSVG.rayCasting(snap, polygon)) {
+        wallList.push(window.editorVars.WALLS[i]); // Return EDGES Index
+      }
+    }
+    if (wallList.length == 0) return false;
+    else {
+      if (wallList.length == 1) return wallList[0];
+      else return wallList;
+    }
+  },
+
+  rayCastingWalls: function (snap) {
+    const wallList = [];
+    for (let i = 0; i < window.editorVars.WALLS.length; i++) {
+      const polygon = [];
+      for (let pp = 0; pp < 4; pp++) {
+        polygon.push({ x: window.editorVars.WALLS[i].coords[pp].x, y: window.editorVars.WALLS[i].coords[pp].y }); // FOR Z
+      }
+      if (qSVG.rayCasting(snap, polygon)) {
+        wallList.push(window.editorVars.WALLS[i]); // Return EDGES Index
+      }
+    }
+    if (wallList.length == 0) return false;
+    else {
+      if (wallList.length == 1) {
+        return wallList[0];
+      } else {
+        return wallList;
+      }
+    }
+  },
+
+  objFromWall: function (wall) {
+    console.log("wall", wall);
+    const objList = [];
+    for (let scan = 0; scan < window.editorVars.OBJDATA.length; scan++) {
+      let search;
+
+      if (window.editorVars.OBJDATA[scan].family == "inWall") {
+        const eq = qSVG.createEquation(
+          wall.start.x,
+          wall.start.y,
+          wall.end.x,
+          wall.end.y
+        );
+
+        search = qSVG.nearPointOnEquation(eq, window.editorVars.OBJDATA[scan]);
+
+        if (
+          search.distance < 0.01 &&
+          qSVG.btwn(window.editorVars.OBJDATA[scan].x, wall.start.x, wall.end.x) &&
+          qSVG.btwn(window.editorVars.OBJDATA[scan].y, wall.start.y, wall.end.y)
+        )
+          objList.push(window.editorVars.OBJDATA[scan]);
+      }
+    }
+    return objList;
+  },
+
+  inWallRib2: function (wall, option = false) {
+    if (!option) {
+      clearHtmlTagById("boxRib");
+    }
+    const ribMaster = [];
+    const emptyArray = [];
+    ribMaster.push(emptyArray);
+    ribMaster.push(emptyArray);
+    let distance;
+    const angleTextValue = wall.angle * (180 / Math.PI);
+    const objWall = editor.objFromWall(wall); // LIST OBJ ON EDGE
+    ribMaster[0].push({
+      wall: wall,
+      crossObj: false,
+      side: "up",
+      coords: wall.coords[0],
+      distance: 0,
+    });
+    ribMaster[1].push({
+      wall: wall,
+      crossObj: false,
+      side: "down",
+      coords: wall.coords[1],
+      distance: 0,
+    });
+    for (const ob in objWall) {
+      const objTarget = objWall[ob];
+      objTarget.up = [
+        qSVG.nearPointOnEquation(wall.equations.up, objTarget.limit[0]),
+        qSVG.nearPointOnEquation(wall.equations.up, objTarget.limit[1]),
+      ];
+      objTarget.down = [
+        qSVG.nearPointOnEquation(wall.equations.down, objTarget.limit[0]),
+        qSVG.nearPointOnEquation(wall.equations.down, objTarget.limit[1]),
+      ];
+
+      distance = qSVG.measure(wall.coords[0], objTarget.up[0]) / window.editorVars.METER;
+      ribMaster[0].push({
+        wall: wall,
+        crossObj: ob,
+        side: "up",
+        coords: objTarget.up[0],
+        distance: distance.toFixed(2),
+      });
+      distance = qSVG.measure(wall.coords[0], objTarget.up[1]) / window.editorVars.METER;
+      ribMaster[0].push({
+        wall: wall,
+        crossObj: ob,
+        side: "up",
+        coords: objTarget.up[1],
+        distance: distance.toFixed(2),
+      });
+      distance = qSVG.measure(wall.coords[1], objTarget.down[0]) / window.editorVars.METER;
+      ribMaster[1].push({
+        wall: wall,
+        crossObj: ob,
+        side: "down",
+        coords: objTarget.down[0],
+        distance: distance.toFixed(2),
+      });
+      distance = qSVG.measure(wall.coords[1], objTarget.down[1]) / window.editorVars.METER;
+      ribMaster[1].push({
+        wall: wall,
+        crossObj: ob,
+        side: "down",
+        coords: objTarget.down[1],
+        distance: distance.toFixed(2),
+      });
+    }
+    distance = qSVG.measure(wall.coords[0], wall.coords[3]) / window.editorVars.METER;
+    ribMaster[0].push({
+      wall: wall,
+      crossObj: false,
+      side: "up",
+      coords: wall.coords[3],
+      distance: distance,
+    });
+    distance = qSVG.measure(wall.coords[1], wall.coords[2]) / window.editorVars.METER;
+    ribMaster[1].push({
+      wall: wall,
+      crossObj: false,
+      side: "down",
+      coords: wall.coords[2],
+      distance: distance,
+    });
+    ribMaster[0].sort(function (a, b) {
+      return (a.distance - b.distance).toFixed(2);
+    });
+    ribMaster[1].sort(function (a, b) {
+      return (a.distance - b.distance).toFixed(2);
+    });
+    for (const t in ribMaster) {
+      for (let n = 1; n < ribMaster[t].length; n++) {
+        const found = true;
+        let shift = -5;
+        const valueText = Math.abs(
+          ribMaster[t][n - 1].distance - ribMaster[t][n].distance
+        );
+        let angleText = angleTextValue;
+        if (found) {
+          if (ribMaster[t][n - 1].side == "down") {
+            shift = -shift + 10;
+          }
+          if (angleText > 89 || angleText < -89) {
+            angleText -= 180;
+            if (ribMaster[t][n - 1].side == "down") {
+              shift = -5;
+            } else shift = -shift + 10;
+          }
+
+          const sizeText = [];
+
+          sizeText[n] = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text"
+          );
+          const startText = qSVG.middle(
+            ribMaster[t][n - 1].coords.x,
+            ribMaster[t][n - 1].coords.y,
+            ribMaster[t][n].coords.x,
+            ribMaster[t][n].coords.y
+          );
+          sizeText[n].setAttributeNS(null, "x", startText.x);
+          sizeText[n].setAttributeNS(null, "y", startText.y + shift);
+          sizeText[n].setAttributeNS(null, "text-anchor", "middle");
+          sizeText[n].setAttributeNS(null, "font-family", "roboto");
+          sizeText[n].setAttributeNS(null, "stroke", "#ffffff");
+          sizeText[n].textContent = valueText.toFixed(2);
+          if (sizeText[n].textContent < 1) {
+            sizeText[n].setAttributeNS(null, "font-size", "0.8em");
+            sizeText[n].textContent = sizeText[n].textContent.substring(
+              1,
+              sizeText[n].textContent.length
+            );
+          } else sizeText[n].setAttributeNS(null, "font-size", "1em");
+          sizeText[n].setAttributeNS(null, "stroke-width", "0.4px");
+          sizeText[n].setAttributeNS(null, "fill", "#666666");
+          sizeText[n].setAttribute(
+            "transform",
+            "rotate(" + angleText + " " + startText.x + "," + startText.y + ")"
+          );
+
+          document.getElementById("boxRib")?.append(sizeText[n]);
+        }
+      }
     }
   },
 };

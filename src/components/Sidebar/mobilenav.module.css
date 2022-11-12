@@ -1,0 +1,14 @@
+.fileLoadInput {
+   display: none;
+}
+
+.fileLoadLabel {
+    display: block;
+    padding: 14px 25px;
+    height: var(--chakra-sizes-14);
+    background: var(--chakra-colors-teal-500);
+    color: #fff;
+    font-size: 1em;
+    transition: all .4s;
+    cursor: pointer;
+}

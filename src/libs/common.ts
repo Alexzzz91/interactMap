@@ -3,6 +3,9 @@ export const enum MODES {
     PARTITION_MODE = "partition_mode",
     SELECT_MODE = "select_mode",
     BIND_MODE = "bind_mode",
+
+    DOOR_MODE = "door_mode",
+    WINDOW_MODE = "window_mode",
 }
 
 export const enum ZOOM_MODES {

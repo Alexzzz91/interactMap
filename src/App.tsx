@@ -19,7 +19,7 @@ import { MoveBox } from "./components/MoveBox/MoveBox";
 // import { ObjBoundingBox } from "./components/ObjBoundingBox";
 // import { ObjTools } from "./components/ObjTools";
 // import { Panel } from "./components/Panel";
-import SidebarWithHeader from "./components/Sidebar/Sidebar";
+import { SidebarWithHeader } from "./components/Sidebar/Sidebar";
 // import { ReportTools } from "./components/ReportTools";
 // import { RoomTools } from "./components/RoomTools";
 // import { TextToLayer } from "./components/TextToLayer";
@@ -27,9 +27,13 @@ import SidebarWithHeader from "./components/Sidebar/Sidebar";
 // import { WelcomeModal } from "./components/Welcome";
 import { ZoomBox } from "./components/ZoomBox/ZoomBox";
 import { initHistory } from "./libs/functions";
+import { $history, changeHistory } from "./state";
+import { BootType } from "./types/editorVars";
+import { useStore } from "effector-react";
 // import { $cursor, $mode, pageMounted } from "./state";
 
 export function App() {
+	const history = useStore($history);
 //   const currentCursor = useStore($cursor);
 //   const handleAppStart = useEvent(pageMounted);
 //   const currentMode = useStore($mode);
@@ -43,7 +47,7 @@ export function App() {
 
 
 	useEffect(() => {
-		initHistory('recovery');
+		changeHistory(initHistory(history ? BootType.Recovery : BootType.Box));
 	}, []);
 
 	return (
@@ -53,8 +57,6 @@ export function App() {
 
 				<SidebarWithHeader >
 					<Box w='100%' h='100%' >
-						<header>Edité par Home Rough Editor Ver.0.91</header>
-
 						<Linear />
 
 						{/* <div id="areaValue" />

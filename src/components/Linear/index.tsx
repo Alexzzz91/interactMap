@@ -26,6 +26,7 @@ import { useStore } from "effector-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { $cursor, $hasBackground, $mode, hasBackgroundChange } from "../../state";
+import { $themeName } from "../../state/theme";
 import { useLinearEngine } from "./useLinearEngine";
 
 export function Linear() {
@@ -33,8 +34,7 @@ export function Linear() {
 	const [backgroundImage, setBackgroundImage] = useLocalStorage("backgroundImage", "");
 	const [backgroundConfig, setItemBackgroundConfig] = useLocalStorage("backgroundConfig", "");
 
-	console.log("backgroundConfig", backgroundConfig);
-
+	const themeName = useStore($themeName);
 	const hasBackground = useStore($hasBackground);
 	const currentCursor = useStore($cursor);
 	const mode = useStore($mode);
@@ -65,12 +65,20 @@ export function Linear() {
 
 	const handleChangeRatio = useCallback((value) => {
 		setBackgroundProps(prev => {
-
 			return {
 				...prev,
 				width: prev.initialWidth * value,
 				height: prev.initialHeight * value,
 				ratio: value,
+			};
+		});
+	}, []);
+
+	const handleChangeOpacity = useCallback((value) => {
+		setBackgroundProps(prev => {
+			return {
+				...prev,
+				opacity: value,
 			};
 		});
 	}, []);
@@ -84,26 +92,31 @@ export function Linear() {
 		}
 
 		if (backgroundImage) {
-			const src = "data:image/png;base64," + JSON.parse(backgroundImage);
-			const img = new Image();
-			img.src = src;
-
-			img.onload = () => {
-				if (!backgroundConfig) {
-					setBackgroundProps({
-						height: img.height,
-						width: img.width,
-						initialHeight: img.height,
-						initialWidth: img.width,
-						x: 200, 
-						y: 100,
-						ratio: 1,
-					});
-				}
-				setBackground(src);
-				hasBackgroundChange(1);
-			};
-		
+			try {
+				const src = "data:image/png;base64," + JSON.parse(backgroundImage);
+				const img = new Image();
+				img.src = src;
+	
+				img.onload = () => {
+					if (!backgroundConfig) {
+						setBackgroundProps({
+							height: img.height,
+							width: img.width,
+							initialHeight: img.height,
+							initialWidth: img.width,
+							x: 200, 
+							y: 100,
+							ratio: 1,
+							opacity: 1,
+						});
+					}
+					setBackground(src);
+					hasBackgroundChange(1);
+				};
+			} catch (error) {
+				console.log("backgroundImage", error);
+				localStorage.removeItem("backgroundImage");
+			}		
 		} else {
 			// hasBackgroundChange(0);
 		}
@@ -143,7 +156,7 @@ export function Linear() {
 						<path
 							d="M 60 0 L 0 0 0 60"
 							fill="none"
-							stroke="#777"
+							stroke="#454"
 							strokeWidth="0.25"
 						/>
 					</pattern>
@@ -157,8 +170,8 @@ export function Linear() {
 						<path
 							d="M 200 10 L 200 0 L 190 0 M 0 10 L 0 0 L 10 0 M 0 190 L 0 200 L 10 200 M 190 200 L 200 200 L 200 190"
 							fill="none"
-							stroke="#999"
-							strokeWidth="0.8"
+							stroke="#191"
+							strokeWidth="0.9"
 						/>
 					</pattern>
 					<pattern
@@ -184,7 +197,10 @@ export function Linear() {
 							height={backgroundProps.height}
 							x={backgroundProps.x}
 							y={backgroundProps.y}
-							xlinkHref={background} 
+							xlinkHref={background}
+							style={{
+								opacity: backgroundProps.opacity
+							}}
 						/>
 					</g>
 				)}
@@ -200,6 +216,7 @@ export function Linear() {
 				<g id="boxSurface"></g>
 				<g id="boxRoom"></g>
 				<g id="boxwall"></g>
+				<g id="boxcarpentry"></g>
 				<g id="boxbind"></g>
 				<g id="boxArea"></g>
 				<g id="boxRib"></g>
@@ -207,7 +224,7 @@ export function Linear() {
 			</svg>
 			{!!hasBackground && (
 				<>
-					<Button ref={btnRef} colorScheme='teal' onClick={onOpen} zIndex='99'>
+					<Button ref={btnRef} colorScheme={themeName} onClick={onOpen} zIndex='99'>
 						Настроить фоновое изображение 
 					</Button>
 					<Drawer
@@ -291,6 +308,27 @@ export function Linear() {
 													precision={1} 
 													min={0.1}
 													max={10}
+													step={0.1}
+												>
+													<NumberInputField />
+													<NumberInputStepper>
+													<NumberIncrementStepper />
+													<NumberDecrementStepper />
+													</NumberInputStepper>
+												</NumberInput>
+											</Flex>
+										</Box>
+										<Box flex='1'>
+											<Text mb='8px'> Прозрачность </Text>
+											<Flex>
+												<NumberInput 
+													maxW='100px' 
+													mr='2rem' 
+													value={backgroundProps.opacity} 
+													onChange={handleChangeOpacity} 
+													precision={1} 
+													min={0.1}
+													max={1}
 													step={0.1}
 												>
 													<NumberInputField />

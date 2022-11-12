@@ -17,10 +17,12 @@ import {
     zoomDecrement,
     zoomIncrement,
 } from "../../state";
+import { $themeName } from "../../state/theme";
 
 import * as classes from "./zoombox.module.css";
 
 export function ZoomBox() {
+    const themeName = useStore($themeName);
     const widthViewbox = useStore($widthViewbox);
     const heightViewbox = useStore($heightViewbox);
     const originXViewbox = useStore($originXViewbox);
@@ -85,7 +87,7 @@ export function ZoomBox() {
         >
             <VStack alignItems={"flex-end"}>
                 <IconButton
-                    colorScheme='teal'
+                    colorScheme={themeName}
                     aria-label='Увеличить масштаб'
                     size='sm'
                     fontSize='20px'
@@ -93,7 +95,7 @@ export function ZoomBox() {
                     icon={<Icon as={HiZoomIn} color='cyan.50' />}
                 />
                 <IconButton
-                    colorScheme='teal'
+                    colorScheme={themeName}
                     aria-label='Уменьшить масштаб'
                     size='sm'
                     fontSize='20px'

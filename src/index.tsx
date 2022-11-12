@@ -15,6 +15,7 @@ window.editorVars = {
   binder: undefined,
   lengthTemp: undefined,
   METER: 60,
+  factor: 1,
 
   // wallSize: 20,
   // partitionSize: 8,
@@ -52,7 +53,6 @@ window.editorVars = {
   // originX_viewbox: 0,
   // originY_viewbox: 0,
   // zoom: 9,
-  // factor: 1,
 };
 
 if (module.hot) {

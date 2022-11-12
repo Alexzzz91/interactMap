@@ -1,7 +1,6 @@
 {
   "name": "map-editor",
   "source": "src/index.html",
-  "type": "module",
   "scripts": {
     "cleanup": "rm -rf .parcel-cache dist",
     "start": "parcel -p 8080",
@@ -18,6 +17,7 @@
     "effector-react": "^22.1.6",
     "express": "^4.18.2",
     "framer-motion": "^7.3.4",
+    "os": "^0.1.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.4.0",

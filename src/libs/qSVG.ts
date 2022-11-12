@@ -347,8 +347,6 @@ const qSVG = {
 
 
 
-
-
   nearPointFromPath: function (Pathsvg, point, range = Infinity) {
     const pathLength = Pathsvg.getTotalLength();
     if (pathLength > 0) {

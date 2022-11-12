@@ -1,4 +1,5 @@
 import { Grid, GridItem, Icon, IconButton,} from "@chakra-ui/react";
+import { useStore } from "effector-react";
 import React, { useCallback } from "react";
 import { 
     HiOutlineArrowCircleDown, 
@@ -16,10 +17,12 @@ import {
     originYViewboxReset,
     zoomReset,
 } from "../../state";
+import { $themeName } from "../../state/theme";
 
 import * as classes from "./movebox.module.css";
 
 export function MoveBox() {
+    const themeName = useStore($themeName);
     const handleClickTop = useCallback(() => {
         originYViewboxDecrement(50);
 
@@ -60,7 +63,7 @@ export function MoveBox() {
         >
             <GridItem area={"top"}>
                 <IconButton
-                    colorScheme='teal'
+                    colorScheme={themeName}
                     aria-label='Шаг наверх'
                     size='sm'
                     fontSize='20px'
@@ -71,7 +74,7 @@ export function MoveBox() {
             </GridItem>
             <GridItem area={"right"}>
                 <IconButton
-                    colorScheme='teal'
+                    colorScheme={themeName}
                     aria-label='Шаг в право'
                     size='sm'
                     fontSize='20px'
@@ -82,7 +85,7 @@ export function MoveBox() {
             </GridItem>
             <GridItem area={"center"}>
                 <IconButton
-                    colorScheme='teal'
+                    colorScheme={themeName}
                     aria-label='Отцентровать'
                     size='sm'
                     fontSize='20px'
@@ -94,7 +97,7 @@ export function MoveBox() {
             </GridItem>
             <GridItem area={"left"}>
                 <IconButton
-                    colorScheme='teal'
+                    colorScheme={themeName}
                     aria-label='Шаг в лево'
                     size='sm'
                     fontSize='20px'
@@ -105,7 +108,7 @@ export function MoveBox() {
             </GridItem>
             <GridItem area={"bottom"}>
                 <IconButton
-                    colorScheme='teal'
+                    colorScheme={themeName}
                     aria-label='Шаг в низ'
                     size='sm'
                     fontSize='20px'

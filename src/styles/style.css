@@ -68,10 +68,9 @@ header {
 body {
   font-family: "Roboto", sans-serif;
   overflow: hidden;
-  background: "#f2eee5";
   margin: 0;
   padding: 0;
-  background:#f2eee5;
+  background:#f3f3f3;
 }
 
 input[type="range"] {

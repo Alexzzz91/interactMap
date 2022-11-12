@@ -1,4 +1,5 @@
-import { createEffect, createEvent, createStore, sample } from "effector";
+import { createDomain, createEffect, createEvent, createStore, sample } from "effector";
+import { loadFromStorage, saveToStorage } from "./persist";
 
 const cursorChange = createEvent<string>();
 const $cursor = createStore("default").on(cursorChange, (_state, newCursor) => newCursor);
@@ -12,16 +13,24 @@ const $ratioWidthZoom = createStore(1).on(ratioWidthZoomChange, (_state, ratio) 
 const modeChange = createEvent<string>();
 const $mode = createStore("select_mode").on(modeChange, (_state, mode) => mode);
 
+const modeOptionsChange = createEvent<string>();
+const $modeOptions = createStore("").on(modeOptionsChange, (_state, modeOptions) => modeOptions);
+
 const multipleModeChange = createEvent();
 const $multipleMode = createStore(true).on(multipleModeChange, (state) => !state);
 
 const hasActionChange = createEvent<number>();
 const $hasAction = createStore(0).on(hasActionChange, (_state, hasAction) => hasAction);
 
-const modeOptionsChange = createEvent<string>();
-const $modeOptions = createStore("").on(modeOptionsChange, (_state, modeOptions) => modeOptions);
+
+
 
 const pageMounted = createEvent();
+
+
+
+
+
 
 const zoomChange = createEvent<number>();
 const zoomIncrement = createEvent<number>();
@@ -76,6 +85,32 @@ const $heightViewbox = createStore(0)
 const setRatioViewbox = createEvent<number>();
 const $ratioViewbox = createStore(0).on(setRatioViewbox, (_state, ratio) => ratio);
 
+
+
+
+
+
+
+const history = createDomain("history");
+
+loadFromStorage(history, localStorage);
+saveToStorage(history, localStorage);
+
+
+export const $history = history.store("", {name: "history"});
+
+export const changeHistory = onChangeField($history);
+
+function onChangeField(store) {
+  const onChange = createEvent();
+  store.on(onChange, (_, value) => {
+    console.log('value', value);
+    return value;
+  });
+  return onChange;
+}
+
+
 const messageDeleteClicked = createEvent<{}>();
 const messageSendClicked = createEvent();
 const messageEnterPressed = createEvent();
@@ -99,7 +134,12 @@ const LocalStorageKey = "effector-example-history";
 function loadHistory(): Message[] | void {
   const source = localStorage.getItem(LocalStorageKey);
   if (source) {
-    return JSON.parse(source);
+    try {
+      return JSON.parse(source);
+    } catch (error) {
+      console.log("loadHistory", error);
+      return undefined;
+    }
   }
   return undefined;
 }

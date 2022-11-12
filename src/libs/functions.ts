@@ -1,6 +1,9 @@
+import { BootType } from "../types/editorVars";
 import { SnapType } from "./common.types";
 import { editor } from "./editor";
 import { qSVG } from "./qSVG";
+
+const colorWall = "#666";
 
 const clearHtmlTagById = (tag: string) => {
   const target = document.getElementById(tag);
@@ -31,7 +34,7 @@ const cursor = (tool) => {
 
 const save = (boot = false) => {
   if (boot) {
-    localStorage.removeItem("history");
+    localStorage.removeItem("history/history");
   }
 
   const {
@@ -51,8 +54,7 @@ const save = (boot = false) => {
     }
   }
   if (
-    JSON.stringify({ objData: OBJDATA, wallData: WALLS, roomData: ROOM }) ==
-    HISTORY[HISTORY.length - 1]
+    JSON.stringify({ objData: OBJDATA, wallData: WALLS, roomData: ROOM }) == HISTORY[HISTORY.length - 1]
   ) {
     for (const k in WALLS) {
       if (WALLS[k].child != null) WALLS[k].child = WALLS[WALLS[k].child];
@@ -69,12 +71,10 @@ const save = (boot = false) => {
     JSON.stringify({ objData: OBJDATA, wallData: WALLS, roomData: ROOM })
   );
 
-  localStorage.setItem("history", JSON.stringify(HISTORY));
+  localStorage.setItem("history/history", JSON.stringify(HISTORY));
 
   HISTORY.index++;
-  if (HISTORY.index > 1) {
-    // $("#undo").removeClass("disabled");
-  }
+  
   for (const k in WALLS) {
     if (WALLS[k].child != null) {
       WALLS[k].child = WALLS[WALLS[k].child];
@@ -243,7 +243,6 @@ const intersection = ({
 };
 
 const intersectionOff = () => {
-  console.log();
   if (typeof window.editorVars.lineIntersection != "undefined" && window.editorVars.lineIntersection) {
     window.editorVars.lineIntersection.remove();
   }
@@ -569,6 +568,7 @@ const rib = (shift = 15) => {
             }
           }
 
+          const sizeText = [];
           if (found) {
             let angleText =
               window.editorVars.WALLS[ribMaster[t][a][n].wallIndex].angle * (180 / Math.PI);
@@ -626,7 +626,7 @@ const rib = (shift = 15) => {
   }
 };
 
-function load(index = window.editorVars.HISTORY.index, boot = false) {
+const load = (index = window.editorVars.HISTORY.index, boot = false) => {
   if (window.editorVars.HISTORY.length == 0 && !boot) {
     return false;
   }
@@ -634,24 +634,35 @@ function load(index = window.editorVars.HISTORY.index, boot = false) {
     window.editorVars.OBJDATA[k].graph.remove();
   }
   window.editorVars.OBJDATA = [];
-  let historyTemp = [];
-  historyTemp = JSON.parse(localStorage.getItem("history"));
-  historyTemp = JSON.parse(historyTemp[index]);
+
+  let historyTemp;
+
+  try {
+    historyTemp = JSON.parse(localStorage.getItem("history/history") || []);
+    historyTemp = JSON.parse(historyTemp[index]);
+  } catch (error) {
+    console.log("load JSON.parse", error);
+  }
 
   for (var k in historyTemp.objData) {
     const OO = historyTemp.objData[k];
     // if (OO.family == 'energy') OO.family = 'byObject';
-    const obj = new editor.obj2D(
-      OO.family,
-      OO.class,
-      OO.type,
-      { x: OO.x, y: OO.y },
-      OO.angle,
-      OO.angleSign,
-      OO.size,
-      (OO.hinge = "normal"),
-      OO.thick,
-      OO.value
+    const obj = new editor.obj2D({
+      family: OO.family,
+      className: OO.class,
+      type: OO.type,
+      pos:  { x: OO.x, y: OO.y },
+      angle:  OO.angle,
+      angleSign: OO.angleSign,
+      size: OO.size,
+      hinge: (OO.hinge = "normal"),
+      thick: OO.thick,
+      value: OO.value,
+      offset: 1,
+      originXViewbox: 0,
+      originYViewbox: 0,
+    }
+
     );
     obj.limit = OO.limit;
     window.editorVars.OBJDATA.push(obj);
@@ -674,24 +685,60 @@ function load(index = window.editorVars.HISTORY.index, boot = false) {
   window.editorVars.ROOM = historyTemp.roomData;
   editor.architect(window.editorVars.WALLS);
   editor.showScaleBox();
+  console.log("112121212");
   rib();
-}
+};
 
-const initHistory = (boot?: string) => {
+const limitObj = (equation, size, coords, message = false) => {
+  if (message) console.log(message);
+  let pos1 = {};
+  let pos2 = {};
+  const Px = coords.x;
+  const Py = coords.y;
+  const Aq = equation.A;
+  const Bq = equation.B;
+  if (Aq == "v") {
+    pos1 = { x: Px, y: Py - size / 2 };
+    pos2 = { x: Px, y: Py + size / 2 };
+  } else if (Aq == "h") {
+    pos1 = { x: Px - size / 2, y: Py };
+    pos2 = { x: Px + size / 2, y: Py };
+  } else {
+    const A = 1 + Aq * Aq;
+    const B = -2 * Px + 2 * Aq * Bq + -2 * Py * Aq;
+    const C = Px * Px + Bq * Bq - 2 * Py * Bq + Py * Py - (size * size) / 4; // -N
+    const Delta = B * B - 4 * A * C;
+    const posX1 = (-B - Math.sqrt(Delta)) / (2 * A);
+    const posX2 = (-B + Math.sqrt(Delta)) / (2 * A);
+    pos1 = { x: posX1, y: Aq * posX1 + Bq };
+    pos2 = { x: posX2, y: Aq * posX2 + Bq };
+  }
+  return [pos1, pos2];
+};
+
+
+const initHistory = (bootType?: BootType) => {
   window.editorVars.HISTORY.index = 0;
-  if (!boot && localStorage.getItem("history")){
-    localStorage.removeItem("history");
+
+  if (!bootType && localStorage.getItem("history/history")){
+    localStorage.removeItem("history/history");
   }
 
-  if (localStorage.getItem("history") && boot == "recovery") {
-    const historyTemp = JSON.parse(localStorage.getItem("history"));
-    load(historyTemp.length - 1, "boot");
-    save("boot");
+  if (localStorage.getItem("history/history") && bootType == BootType.Recovery) {
+    try {
+      const historyTemp = JSON.parse(localStorage.getItem("history/history"));
+      console.log("historyTemp", historyTemp);
+      load(historyTemp.length - 1, true);
+      save(true);
+      return historyTemp;
+    } catch (error) {
+      console.log("initHistory", error);
+    }
   }
 
-  if (boot == "newSquare") {
-    if (localStorage.getItem("history")) {
-      localStorage.removeItem("history");
+  if (bootType == BootType.Box) {
+    if (localStorage.getItem("history/history")) {
+      localStorage.removeItem("history/history");
     }
 
     window.editorVars.HISTORY.push({
@@ -816,189 +863,13 @@ const initHistory = (boot?: string) => {
         },
       ],
     });
+    
     window.editorVars.HISTORY[0] = JSON.stringify(window.editorVars.HISTORY[0]);
-    localStorage.setItem("history", JSON.stringify(window.editorVars.HISTORY));
+    localStorage.setItem("history/history", JSON.stringify(window.editorVars.HISTORY));
     load(0);
     save();
-  }
-  if (boot == "newL") {
-    if (localStorage.getItem("history")) {
-      localStorage.removeItem("history");
-    }
-    window.editorVars.HISTORY.push({
-      objData: [],
-      wallData: [
-        {
-          thick: 20,
-          start: { x: 447, y: 458 },
-          end: { x: 447, y: 744 },
-          type: "normal",
-          parent: 5,
-          child: 1,
-          angle: 1.5707963267948966,
-          equations: {
-            up: { A: "v", B: 457 },
-            down: { A: "v", B: 437 },
-            base: { A: "v", B: 447 },
-          },
-          coords: [
-            { x: 457, y: 468 },
-            { x: 437, y: 448 },
-            { x: 437, y: 754 },
-            { x: 457, y: 734 },
-          ],
-          graph: { 0: {}, context: {}, length: 1 },
-        },
-        {
-          thick: 20,
-          start: { x: 447, y: 744 },
-          end: { x: 1347, y: 744 },
-          type: "normal",
-          parent: 0,
-          child: 2,
-          angle: 0,
-          equations: {
-            up: { A: "h", B: 734 },
-            down: { A: "h", B: 754 },
-            base: { A: "h", B: 744 },
-          },
-          coords: [
-            { x: 457, y: 734 },
-            { x: 437, y: 754 },
-            { x: 1357, y: 754 },
-            { x: 1337, y: 734 },
-          ],
-          graph: { 0: {}, context: {}, length: 1 },
-        },
-        {
-          thick: 20,
-          start: { x: 1347, y: 744 },
-          end: { x: 1347, y: 144 },
-          type: "normal",
-          parent: 1,
-          child: 3,
-          angle: -1.5707963267948966,
-          equations: {
-            up: { A: "v", B: 1337 },
-            down: { A: "v", B: 1357 },
-            base: { A: "v", B: 1347 },
-          },
-          coords: [
-            { x: 1337, y: 734 },
-            { x: 1357, y: 754 },
-            { x: 1357, y: 134 },
-            { x: 1337, y: 154 },
-          ],
-          graph: { 0: {}, context: {}, length: 1 },
-        },
-        {
-          thick: 20,
-          start: { x: 1347, y: 144 },
-          end: { x: 1020, y: 144 },
-          type: "normal",
-          parent: 2,
-          child: 4,
-          angle: 3.141592653589793,
-          equations: {
-            up: { A: "h", B: 154 },
-            down: { A: "h", B: 134 },
-            base: { A: "h", B: 144 },
-          },
-          coords: [
-            { x: 1337, y: 154 },
-            { x: 1357, y: 134 },
-            { x: 1010, y: 134 },
-            { x: 1030, y: 154 },
-          ],
-          graph: { 0: {}, context: {}, length: 1 },
-        },
-        {
-          thick: 20,
-          start: { x: 1020, y: 144 },
-          end: { x: 1020, y: 458 },
-          type: "normal",
-          parent: 3,
-          child: 5,
-          angle: 1.5707963267948966,
-          equations: {
-            up: { A: "v", B: 1030 },
-            down: { A: "v", B: 1010 },
-            base: { A: "v", B: 1020 },
-          },
-          coords: [
-            { x: 1030, y: 154 },
-            { x: 1010, y: 134 },
-            { x: 1010, y: 448 },
-            { x: 1030, y: 468 },
-          ],
-          graph: { 0: {}, context: {}, length: 1 },
-        },
-        {
-          thick: 20,
-          start: { x: 1020, y: 458 },
-          end: { x: 447, y: 458 },
-          type: "normal",
-          parent: 4,
-          child: 0,
-          angle: 3.141592653589793,
-          equations: {
-            up: { A: "h", B: 468 },
-            down: { A: "h", B: 448 },
-            base: { A: "h", B: 458 },
-          },
-          coords: [
-            { x: 1030, y: 468 },
-            { x: 1010, y: 448 },
-            { x: 437, y: 448 },
-            { x: 457, y: 468 },
-          ],
-          graph: { 0: {}, context: {}, length: 1 },
-        },
-      ],
-      roomData: [
-        {
-          coords: [
-            { x: 447, y: 744 },
-            { x: 1347, y: 744 },
-            { x: 1347, y: 144 },
-            { x: 1020, y: 144 },
-            { x: 1020, y: 458 },
-            { x: 447, y: 458 },
-            { x: 447, y: 744 },
-          ],
-          coordsOutside: [
-            { x: 1357, y: 754 },
-            { x: 1357, y: 134 },
-            { x: 1010, y: 134 },
-            { x: 1010, y: 448 },
-            { x: 437, y: 448 },
-            { x: 437, y: 754 },
-            { x: 1357, y: 754 },
-          ],
-          coordsInside: [
-            { x: 1337, y: 734 },
-            { x: 1337, y: 154 },
-            { x: 1030, y: 154 },
-            { x: 1030, y: 468 },
-            { x: 457, y: 468 },
-            { x: 457, y: 734 },
-            { x: 1337, y: 734 },
-          ],
-          inside: [],
-          way: ["0", "2", "3", "4", "5", "1", "0"],
-          area: 330478,
-          surface: "",
-          name: "",
-          color: "gradientWhite",
-          showSurface: true,
-          action: "add",
-        },
-      ],
-    });
-    window.editorVars.HISTORY[0] = JSON.stringify(window.editorVars.HISTORY[0]);
-    localStorage.setItem("history", JSON.stringify(window.editorVars.HISTORY));
-    load(0);
-    save();
+
+    return window.editorVars.HISTORY;
   }
 };
 
@@ -2120,18 +1991,171 @@ const carpentryCalc = (classObj, typeObj, sizeObj, thickObj, dividerObj = 10) =>
   // }
 
   return construc;
-}
+};
+
+const inWallRib = (wall, option = false) => {
+  if (!option) {
+    clearHtmlTagById("boxRib");
+  }
+
+  const ribMaster = [[], []];
+  
+  let inter;
+  let distance;
+  let cross;
+  const angleTextValue = wall.angle * (180 / Math.PI);
+  const objWall = editor.objFromWall(wall); // LIST OBJ ON EDGE
+  ribMaster[0].push({
+    wall: wall,
+    crossObj: false,
+    side: "up",
+    coords: wall.coords[0],
+    distance: 0,
+  });
+  ribMaster[1].push({
+    wall: wall,
+    crossObj: false,
+    side: "down",
+    coords: wall.coords[1],
+    distance: 0,
+  });
+  for (const ob in objWall) {
+    var objTarget = objWall[ob];
+    objTarget.up = [
+      qSVG.nearPointOnEquation(wall.equations.up, objTarget.limit[0]),
+      qSVG.nearPointOnEquation(wall.equations.up, objTarget.limit[1]),
+    ];
+    objTarget.down = [
+      qSVG.nearPointOnEquation(wall.equations.down, objTarget.limit[0]),
+      qSVG.nearPointOnEquation(wall.equations.down, objTarget.limit[1]),
+    ];
+
+    distance = qSVG.measure(wall.coords[0], objTarget.up[0]) / window.editorVars.METER;
+    ribMaster[0].push({
+      wall: objTarget,
+      crossObj: ob,
+      side: "up",
+      coords: objTarget.up[0],
+      distance: distance.toFixed(2),
+    });
+    distance = qSVG.measure(wall.coords[0], objTarget.up[1]) / window.editorVars.METER;
+    ribMaster[0].push({
+      wall: objTarget,
+      crossObj: ob,
+      side: "up",
+      coords: objTarget.up[1],
+      distance: distance.toFixed(2),
+    });
+    distance = qSVG.measure(wall.coords[1], objTarget.down[0]) / window.editorVars.METER;
+    ribMaster[1].push({
+      wall: objTarget,
+      crossObj: ob,
+      side: "down",
+      coords: objTarget.down[0],
+      distance: distance.toFixed(2),
+    });
+    distance = qSVG.measure(wall.coords[1], objTarget.down[1]) / window.editorVars.METER;
+    ribMaster[1].push({
+      wall: objTarget,
+      crossObj: ob,
+      side: "down",
+      coords: objTarget.down[1],
+      distance: distance.toFixed(2),
+    });
+  }
+  distance = qSVG.measure(wall.coords[0], wall.coords[3]) / window.editorVars.METER;
+  ribMaster[0].push({
+    wall: objTarget,
+    crossObj: false,
+    side: "up",
+    coords: wall.coords[3],
+    distance: distance,
+  });
+  distance = qSVG.measure(wall.coords[1], wall.coords[2]) / window.editorVars.METER;
+  ribMaster[1].push({
+    wall: objTarget,
+    crossObj: false,
+    side: "down",
+    coords: wall.coords[2],
+    distance: distance,
+  });
+  ribMaster[0].sort(function (a, b) {
+    return (a.distance - b.distance).toFixed(2);
+  });
+  ribMaster[1].sort(function (a, b) {
+    return (a.distance - b.distance).toFixed(2);
+  });
+
+  const sizeText = [];
+
+  for (const t in ribMaster) {
+    for (let n = 1; n < ribMaster[t].length; n++) {
+      const found = true;
+      let shift = -5;
+      const valueText = Math.abs(
+        ribMaster[t][n - 1].distance - ribMaster[t][n].distance
+      );
+      let angleText = angleTextValue;
+      if (found) {
+        if (ribMaster[t][n - 1].side == "down") {
+          shift = -shift + 10;
+        }
+        if (angleText > 89 || angleText < -89) {
+          angleText -= 180;
+          if (ribMaster[t][n - 1].side == "down") {
+            shift = -5;
+          } else shift = -shift + 10;
+        }
+
+        sizeText[n] = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "text"
+        );
+        const startText = qSVG.middle(
+          ribMaster[t][n - 1].coords.x,
+          ribMaster[t][n - 1].coords.y,
+          ribMaster[t][n].coords.x,
+          ribMaster[t][n].coords.y
+        );
+        sizeText[n].setAttributeNS(null, "x", startText.x);
+        sizeText[n].setAttributeNS(null, "y", startText.y + shift);
+        sizeText[n].setAttributeNS(null, "text-anchor", "middle");
+        sizeText[n].setAttributeNS(null, "font-family", "roboto");
+        sizeText[n].setAttributeNS(null, "stroke", "#ffffff");
+        sizeText[n].textContent = valueText.toFixed(2);
+        if (sizeText[n].textContent < 1) {
+          sizeText[n].setAttributeNS(null, "font-size", "0.8em");
+          sizeText[n].textContent = sizeText[n].textContent.substring(
+            1,
+            sizeText[n].textContent.length
+          );
+        } else sizeText[n].setAttributeNS(null, "font-size", "1em");
+        sizeText[n].setAttributeNS(null, "stroke-width", "0.27px");
+        sizeText[n].setAttributeNS(null, "fill", "#666666");
+        sizeText[n].setAttribute(
+          "transform",
+          "rotate(" + angleText + " " + startText.x + "," + startText.y + ")"
+        );
+
+        document.getElementById("boxRib")?.append(sizeText[n]);
+      }
+    }
+  }
+};
 
 
 export {
     intersection,
     cursor,
+    load,
+    limitObj,
     clearHtmlTagById,
     save,
     intersectionOff,
     minMoveGrid,
     isObjectsEquals,
     rib,
+    inWallRib,
     initHistory,
     carpentryCalc,
 };
