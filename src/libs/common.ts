@@ -6,6 +6,9 @@ export const enum MODES {
 
     DOOR_MODE = "door_mode",
     WINDOW_MODE = "window_mode",
+
+    //Edit mods
+    EDIT_DOOR_MODE = "edit_door_mode",
 }
 
 export const enum ZOOM_MODES {

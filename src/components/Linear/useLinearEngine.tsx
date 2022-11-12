@@ -1,10 +1,19 @@
 import { useStore } from "effector-react";
 import React, { useCallback, useEffect, useRef } from "react";
-import { TbLetterB } from "react-icons/tb";
 import { useThrottle } from "../../hooks/useThrottle";
 import { MODES } from "../../libs/common";
 import { editor } from "../../libs/editor";
-import { intersection, intersectionOff, minMoveGrid, save, rib, limitObj, inWallRib, isObjectsEquals, clearHtmlTagById } from "../../libs/functions";
+import { 
+  intersection,
+  intersectionOff,
+  minMoveGrid,
+  save,
+  rib,
+  limitObj,
+  inWallRib,
+  isObjectsEquals,
+  clearHtmlTagById,
+} from "../../libs/functions";
 import { qSVG } from "../../libs/qSVG";
 import { 
   $cursor, 
@@ -32,10 +41,10 @@ const gridSnap = 1;
 
 const WALL_SIZE = 20;
 const PARTITION_SIZE = 8;
+
 export const ZOOM_SPEED_MULTIPLIER = 0.065;
 
 let drag = 0;
-
 
 const calculateSnap = ({
   event,
@@ -735,11 +744,11 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
           newCursor = "pointer";
         }
       } else {
-        let wallBind = editor.nearWall({ snap, range: 6 })
+        let wallBind = editor.nearWall({ snap, range: 6 });
         if (wallBind) {
           if (wallBind && !window.editorVars.binder) {
             wallBind = wallBind.wall;
-            let objWall = editor.objFromWall(wallBind);
+            const objWall = editor.objFromWall(wallBind);
             if (objWall.length > 0) editor.inWallRib2(wallBind);
             window.editorVars.binder = {};
             window.editorVars.binder.wall = wallBind;
@@ -1449,34 +1458,33 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
         }
   
         if (window.editorVars.binder.type == BinderType.Obj) {
-          var moveObj =
-            Math.abs(binder.oldXY.x - binder.x) +
-            Math.abs(binder.oldXY.y - binder.y);
+          const moveObj =
+            Math.abs(window.editorVars.binder.oldXY.x - window.editorVars.binder.x) +
+            Math.abs(window.editorVars.binder.oldXY.y - window.editorVars.binder.y);
           if (moveObj < 1) {
-            $("#panel").hide(100);
-            $("#objTools").show("200", function () {
-              $("#lin").css("cursor", "default");
-              $("#boxinfo").html("Config. the door/window");
-              document
-                .getElementById("doorWindowWidth")
-                .setAttribute("min", binder.obj.params.resizeLimit.width.min);
-              document
-                .getElementById("doorWindowWidth")
-                .setAttribute("max", binder.obj.params.resizeLimit.width.max);
-              document.getElementById("doorWindowWidthScale").textContent =
-                binder.obj.params.resizeLimit.width.min +
-                "-" +
-                binder.obj.params.resizeLimit.width.max;
-              document.getElementById("doorWindowWidth").value = binder.obj.size;
-              document.getElementById("doorWindowWidthVal").textContent =
-                binder.obj.size;
-            });
-            mode = "edit_door_mode";
+            // $("#objTools").show("200", function () {
+            //   $("#lin").css("cursor", "default");
+            //   $("#boxinfo").html("Config. the door/window");
+            //   document
+            //     .getElementById("doorWindowWidth")
+            //     .setAttribute("min", binder.obj.params.resizeLimit.width.min);
+            //   document
+            //     .getElementById("doorWindowWidth")
+            //     .setAttribute("max", binder.obj.params.resizeLimit.width.max);
+            //   document.getElementById("doorWindowWidthScale").textContent =
+            //     binder.obj.params.resizeLimit.width.min +
+            //     "-" +
+            //     binder.obj.params.resizeLimit.width.max;
+            //   document.getElementById("doorWindowWidth").value = binder.obj.size;
+            //   document.getElementById("doorWindowWidthVal").textContent =
+            //     binder.obj.size;
+            // });
+            modeChange(MODES.EDIT_DOOR_MODE);
           } else {
-            mode = "select_mode";
-            action = 0;
-            binder.graph.remove();
-            delete binder;
+            modeChange(MODES.SELECT_MODE);
+            newHasActionState = 0;
+            window.editorVars.binder.graph.remove();
+            window.editorVars.binder = undefined;
           }
         }
   
