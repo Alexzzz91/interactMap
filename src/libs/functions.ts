@@ -873,7 +873,14 @@ const initHistory = (bootType?: BootType) => {
   }
 };
 
-const carpentryCalc = (classObj, typeObj, sizeObj, thickObj, dividerObj = 10) => {
+const carpentryCalc = ({
+  classObj, 
+  typeObj,
+  sizeObj, 
+  thickObj, 
+  dividerObj = 10,
+  textValue = '',
+}) => {
   const construc = [];
   construc.params = {};
   construc.params.bindBox = false;
@@ -1983,12 +1990,76 @@ const carpentryCalc = (classObj, typeObj, sizeObj, thickObj, dividerObj = 10) =>
   //   }
   // }
 
-  // if (classObj == "furniture") {
-  //   construc.params.bindBox = true;
-  //   construc.params.move = true;
-  //   construc.params.resize = true;
-  //   construc.params.rotate = true;
-  // }
+  if (classObj == "furniture") {
+    construc.params.bindBox = true;
+    construc.params.move = true;
+    construc.params.resize = true;
+    construc.params.rotate = true;
+
+    console.log({
+      sizeObj,
+      thickObj,
+    });
+
+    construc.push({
+      path: `M45 25H.10V.10h45z`,
+        // "M " +
+        // -sizeObj / 2 +
+        // "," +
+        // -thickObj / 2 +
+        // " H " +
+        // -sizeObj / 2 +
+        // "," +
+        // thickObj / 2 +
+        // " L " +
+        // sizeObj / 2 +
+        // "," +
+        // thickObj / 2 +
+        // " L " +
+        // sizeObj / 2 +
+        // "," +
+        // -thickObj / 2 +
+        // " Z",
+      fill: "#fff",
+      stroke: "#25213F",
+    });
+    construc.push({
+      path: `M40 8H5V6h35zM34 31H10v-2h24zM30 29H14v-4h16z`,
+        // "M " +
+        // -sizeObj / 2 +
+        // "," +
+        // -(thickObj / 2) +
+        // " L " +
+        // -sizeObj / 2 +
+        // "," +
+        // thickObj / 2 +
+        // " L " +
+        // (-sizeObj / 2 + 5) +
+        // "," +
+        // thickObj / 2 +
+        // " L " +
+        // (-sizeObj / 2 + 5) +
+        // "," +
+        // -(thickObj / 2) +
+        // " Z",
+      fill: "#25213F",
+    });
+
+    if (textValue) {
+      construc.push({
+        text: textValue,
+        x: "35",
+        y: "23",
+        fill: "#333333",
+        stroke: "none",
+        fontSize: "1em",
+        strokeWidth: "0.4px",
+      });
+    }
+
+    construc.params.resize = true;
+    construc.params.resizeLimit.width = { min: 26, max: 500 };
+  }
 
   return construc;
 };

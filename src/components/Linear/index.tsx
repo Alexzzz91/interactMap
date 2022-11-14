@@ -217,6 +217,7 @@ export function Linear() {
 				<g id="boxRoom"></g>
 				<g id="boxwall"></g>
 				<g id="boxcarpentry"></g>
+				<g id="boxFurniture"></g>
 				<g id="boxbind"></g>
 				<g id="boxArea"></g>
 				<g id="boxRib"></g>

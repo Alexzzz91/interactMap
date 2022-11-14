@@ -1,4 +1,5 @@
 import { createDomain, createEffect, createEvent, createStore, sample } from "effector";
+import { ModeOptions } from "../types/editorVars";
 import { loadFromStorage, saveToStorage } from "./persist";
 
 const cursorChange = createEvent<string>();
@@ -13,8 +14,8 @@ const $ratioWidthZoom = createStore(1).on(ratioWidthZoomChange, (_state, ratio) 
 const modeChange = createEvent<string>();
 const $mode = createStore("select_mode").on(modeChange, (_state, mode) => mode);
 
-const modeOptionsChange = createEvent<string>();
-const $modeOptions = createStore("").on(modeOptionsChange, (_state, modeOptions) => modeOptions);
+const modeOptionsChange = createEvent<ModeOptions>();
+const $modeOptions = createStore<ModeOptions | null>(null).on(modeOptionsChange, (_state, modeOptions) => modeOptions);
 
 const multipleModeChange = createEvent();
 const $multipleMode = createStore(true).on(multipleModeChange, (state) => !state);

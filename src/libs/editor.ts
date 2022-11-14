@@ -56,6 +56,7 @@ const editor = {
     offset,
     originXViewbox,
     originYViewbox,
+    attributes = {}
   }
   ) {
     this.family = family; // inWall, stick, collision, free
@@ -67,7 +68,7 @@ const editor = {
     this.angleSign = angleSign;
     this.limit = [];
     this.hinge = hinge; // normal, reverse
-    this.graph = qSVG.create("none", "g", {});
+    this.graph = qSVG.create("none", "g", attributes);
     this.scale = { x: 1, y: 1 };
     this.value = value;
     this.size = size;
@@ -75,7 +76,15 @@ const editor = {
     this.width = (this.size / window.editorVars.METER).toFixed(2);
     this.height = (this.thick / window.editorVars.METER).toFixed(2);
 
-    let cc = carpentryCalc(className, type, size, thick, value);
+    let cc = carpentryCalc({
+      classObj: className,
+      typeObj: type,
+      sizeObj: size,
+      thickObj: thick,
+      dividerObj: value,
+      textValue: attributes['data-test-id']
+    });
+    
     let blank;
 
     for (let tt = 0; tt < cc.length; tt++) {
@@ -88,6 +97,7 @@ const editor = {
           "stroke-dasharray": cc[tt].strokeDashArray,
         });
       }
+      console.log(cc[tt].text);
       if (cc[tt].text) {
         blank = qSVG.create("none", "text", {
           x: cc[tt].x,
@@ -99,7 +109,8 @@ const editor = {
           "text-anchor": "middle",
           fill: cc[tt].fill,
         });
-        blank.context.textContent = cc[tt].text;
+        console.log("blank", blank);
+        blank?.textContent = cc[tt].text;
       }
       this.graph.append(blank);
     } // ENDFOR  
@@ -128,18 +139,21 @@ const editor = {
     this.update = function () {
       this.width = (this.size / window.editorVars.METER).toFixed(2);
       this.height = (this.thick / window.editorVars.METER).toFixed(2);
-      cc = carpentryCalc(
-        this.class,
-        this.type,
-        this.size,
-        this.thick,
-        this.value
-      );
+
+      cc = carpentryCalc({
+        classObj: this.class,
+        typeObj: this.type,
+        sizeObj: this.size,
+        thickObj: this.thick,
+        dividerObj: this.value,
+      });
+
       for (let tt = 0; tt < cc.length; tt++) {
         if (cc[tt].path) {
           this.graph.getElementsByTagName("path")[tt].setAttribute("d", cc[tt].path);
         } else {
-          this.graph.find("text").context.textContent = cc[tt].text;
+          console.log("this.graph", this.graph);
+          this.graph.getElementsByTagName("text")?.textContent = cc[tt].text;
         }
       }
       const hingeStatus = this.hinge; // normal - reverse
@@ -1056,7 +1070,6 @@ const editor = {
   },
 
   objFromWall: function (wall) {
-    console.log("wall", wall);
     const objList = [];
     for (let scan = 0; scan < window.editorVars.OBJDATA.length; scan++) {
       let search;
@@ -1228,6 +1241,106 @@ const editor = {
         }
       }
     }
+  },
+
+  stickOnWall: function (snap) {
+    if (window.editorVars.WALLS.length == 0) {
+      return false;
+    }
+    
+    let wallDistance = Infinity;
+    let wallSelected = {};
+    
+    if (window.editorVars.WALLS.length == 0) {
+      return false;
+    }
+    
+    for (let e = 0; e < window.editorVars.WALLS.length; e++) {
+      const eq1 = qSVG.createEquation(
+        window.editorVars.WALLS[e].coords[0].x,
+        window.editorVars.WALLS[e].coords[0].y,
+        window.editorVars.WALLS[e].coords[3].x,
+        window.editorVars.WALLS[e].coords[3].y
+      );
+      const result1 = qSVG.nearPointOnEquation(eq1, snap);
+      const eq2 = qSVG.createEquation(
+        window.editorVars.WALLS[e].coords[1].x,
+        window.editorVars.WALLS[e].coords[1].y,
+        window.editorVars.WALLS[e].coords[2].x,
+        window.editorVars.WALLS[e].coords[2].y
+      );
+      const result2 = qSVG.nearPointOnEquation(eq2, snap);
+      if (
+        result1.distance < wallDistance &&
+        qSVG.btwn(result1.x, window.editorVars.WALLS[e].coords[0].x, window.editorVars.WALLS[e].coords[3].x) &&
+        qSVG.btwn(result1.y, window.editorVars.WALLS[e].coords[0].y, window.editorVars.WALLS[e].coords[3].y)
+      ) {
+        wallDistance = result1.distance;
+        wallSelected = {
+          wall: window.editorVars.WALLS[e],
+          x: result1.x,
+          y: result1.y,
+          distance: result1.distance,
+        };
+      }
+      if (
+        result2.distance < wallDistance &&
+        qSVG.btwn(result2.x, window.editorVars.WALLS[e].coords[1].x, window.editorVars.WALLS[e].coords[2].x) &&
+        qSVG.btwn(result2.y, window.editorVars.WALLS[e].coords[1].y, window.editorVars.WALLS[e].coords[2].y)
+      ) {
+        wallDistance = result2.distance;
+        wallSelected = {
+          wall: window.editorVars.WALLS[e],
+          x: result2.x,
+          y: result2.y,
+          distance: result2.distance,
+        };
+      }
+    }
+    const vv = editor.nearVertice(snap);
+    if (vv.distance < wallDistance) {
+      const eq1 = qSVG.createEquation(
+        vv.number.coords[0].x,
+        vv.number.coords[0].y,
+        vv.number.coords[3].x,
+        vv.number.coords[3].y
+      );
+      const result1 = qSVG.nearPointOnEquation(eq1, vv);
+      const eq2 = qSVG.createEquation(
+        vv.number.coords[1].x,
+        vv.number.coords[1].y,
+        vv.number.coords[2].x,
+        vv.number.coords[2].y
+      );
+      const result2 = qSVG.nearPointOnEquation(eq2, vv);
+      if (
+        result1.distance < wallDistance &&
+        qSVG.btwn(result1.x, vv.number.coords[0].x, vv.number.coords[3].x) &&
+        qSVG.btwn(result1.y, vv.number.coords[0].y, vv.number.coords[3].y)
+      ) {
+        wallDistance = result1.distance;
+        wallSelected = {
+          wall: vv.number,
+          x: result1.x,
+          y: result1.y,
+          distance: result1.distance,
+        };
+      }
+      if (
+        result2.distance < wallDistance &&
+        qSVG.btwn(result2.x, vv.number.coords[1].x, vv.number.coords[2].x) &&
+        qSVG.btwn(result2.y, vv.number.coords[1].y, vv.number.coords[2].y)
+      ) {
+        wallDistance = result2.distance;
+        wallSelected = {
+          wall: vv.number,
+          x: result2.x,
+          y: result2.y,
+          distance: result2.distance,
+        };
+      }
+    }
+    return wallSelected;
   },
 };
 

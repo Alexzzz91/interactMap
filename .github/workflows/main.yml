@@ -31,6 +31,6 @@ jobs:
             ${{ runner.os }}-
       - name: Build app
         run: |
-          npm ci --force
-          npm run build
+          yarn install --frozen-lockfile
+          yarn build
           pm2 restart server

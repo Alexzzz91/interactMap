@@ -33,10 +33,10 @@ import {
   setRatioViewbox,
   widthViewboxChange,
 } from "../../state";
-import { BinderType } from "../../types/editorVars";
+import { BinderType, ModeOptions } from "../../types/editorVars";
 
 const Rcirclebinder = 8;
-const gridMeausre = 20;
+let gridMeausre = 20;
 const gridSnap = 1;
 
 const WALL_SIZE = 20;
@@ -527,19 +527,21 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
 
   const mouseMove = useCallback((event: React.MouseEvent) => {
     let newCursor = cursor;
-    event.preventDefault();    
+    event.preventDefault(); 
+    
+    const getSnap = (state: boolean) => calculateSnap({
+      event, 
+      state,
+      offset: offset.current,
+      originViewbox: {
+        x: originXViewbox,
+        y: originYViewbox,
+      },
+      tactile,
+    });
 
     if (mode == MODES.SELECT_MODE && drag === 0) {
-      const snap = calculateSnap({
-        event, 
-        state: 0,
-        offset: offset.current,
-        originViewbox: {
-          x: originXViewbox,
-          y: originYViewbox,
-        },
-        tactile,
-      });
+      const snap = getSnap(false);
   
       let objTarget = false;
 
@@ -551,6 +553,8 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
           objTarget = window.editorVars.OBJDATA[i];
         }
       }
+
+      console.log('objTarget', objTarget);
 
       if (objTarget !== false) {
         if (window.editorVars.binder && window.editorVars.binder.type == "segment") {
@@ -591,8 +595,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
             
             if (!objTarget.params.move) {
               newCursor = "trash";
-            } 
-            if (objTarget.params.move) {
+            } else {
               newCursor = "move";
             }
           }
@@ -794,16 +797,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     } 
 
     if ((mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE) && hasAction == 0) {
-      const snap  = calculateSnap({
-        event, 
-        state: 0,
-        offset: offset.current,
-        originViewbox: {
-          x: originXViewbox,
-          y: originYViewbox,
-        },
-        tactile
-      });
+      const snap = getSnap(false);
       
       newCursor = "grab";
       startedCursorPositon.current.x = snap.x;
@@ -856,18 +850,144 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
       }
     }
   
+    if (mode == MODES.OBJECT_MODE) {
+      gridMeausre = 15;
+      const snap = getSnap(true);
+
+      if (!window.editorVars.binder) {
+        if (modeOptions == ModeOptions.SimpleStair)
+          window.editorVars.binder = new editor.obj2D({
+            family:  "free",
+            className: "stair",
+            type: "simpleStair",
+            pos: snap,
+            angle: 0,
+            angleSign: 0,
+            size: 0,
+            hinge: "normal",
+            thick: 0,
+            value: 15,
+            offset: offset.current,
+            originXViewbox,
+            originYViewbox,
+          });
+        else {
+          window.editorVars.binder = new editor.obj2D({
+            family:  "free",
+            className: "furniture",
+            type: modeOptions,
+            pos: snap,
+            angle: 270,
+            angleSign: 0,
+            size: 20,
+            hinge: "normal",
+            thick: 0,
+            value: 0,
+            offset: offset.current,
+            originXViewbox,
+            originYViewbox,
+          });
+        }
+  
+        document.getElementById("boxbind")?.append(window.editorVars.binder.graph);
+      } else {
+        if (
+          (window.editorVars.binder.family != "stick" && window.editorVars.binder.family != "collision") ||
+          window.editorVars.WALLS.length == 0
+        ) {
+          window.editorVars.binder.x = snap.x;
+          window.editorVars.binder.y = snap.y;
+          window.editorVars.binder.oldX = window.editorVars.binder.x;
+          window.editorVars.binder.oldY = window.editorVars.binder.y;
+          window.editorVars.binder.update();
+        }
+        if (window.editorVars.binder.family == "collision") {
+          let found = false;
+  
+          if (editor.rayCastingWalls({ 
+            x: window.editorVars.binder.bbox.left, 
+            y: window.editorVars.binder.bbox.top 
+          }))
+            found = true;
+          if (
+            !found &&
+            editor.rayCastingWalls({ 
+              x: window.editorVars.binder.bbox.left, 
+              y: window.editorVars.binder.bbox.bottom,
+            })
+          )
+            found = true;
+          if (
+            !found &&
+            editor.rayCastingWalls({
+              x: window.editorVars.binder.bbox.right,
+              y: window.editorVars.binder.bbox.top,
+            })
+          )
+            found = true;
+          if (
+            !found &&
+            editor.rayCastingWalls({
+              x: window.editorVars.binder.bbox.right,
+              y: window.editorVars.binder.bbox.bottom,
+            })
+          )
+            found = true;
+  
+          if (!found) {
+            window.editorVars.binder.x = snap.x;
+            window.editorVars.binder.y = snap.y;
+            window.editorVars.binder.oldX = window.editorVars.binder.x;
+            window.editorVars.binder.oldY = window.editorVars.binder.y;
+            window.editorVars.binder.update();
+          } else {
+            window.editorVars.binder.x = window.editorVars.binder.oldX;
+            window.editorVars.binder.y = window.editorVars.binder.oldY;
+            window.editorVars.binder.update();
+          }
+        }
+        if (window.editorVars.binder.family == "stick") {
+          const pos = editor.stickOnWall(snap);
+          window.editorVars.binder.oldX = pos.x;
+          window.editorVars.binder.oldY = pos.y;
+          let angleWall = qSVG.angleDeg(
+            pos.wall.start.x,
+            pos.wall.start.y,
+            pos.wall.end.x,
+            pos.wall.end.y
+          );
+          const v1 = qSVG.vectorXY(
+            { x: pos.wall.start.x, y: pos.wall.start.y },
+            { x: pos.wall.end.x, y: pos.wall.end.y }
+          );
+          const v2 = qSVG.vectorXY({ x: pos.wall.end.x, y: pos.wall.end.y }, snap);
+          window.editorVars.binder.x =
+            pos.x -
+            (Math.sin(pos.wall.angle * ((360 / 2) * Math.PI)) * window.editorVars.binder.thick) / 2;
+          window.editorVars.binder.y =
+            pos.y -
+            (Math.cos(pos.wall.angle * ((360 / 2) * Math.PI)) * window.editorVars.binder.thick) / 2;
+          const newAngle = qSVG.vectorDeter(v1, v2);
+          if (Math.sign(newAngle) == 1) {
+            angleWall += 180;
+            window.editorVars.binder.x =
+              pos.x +
+              (Math.sin(pos.wall.angle * ((360 / 2) * Math.PI)) * window.editorVars.binder.thick) /
+                2;
+            window.editorVars.binder.y =
+              pos.y +
+              (Math.cos(pos.wall.angle * ((360 / 2) * Math.PI)) * window.editorVars.binder.thick) /
+                2;
+          }
+          window.editorVars.binder.angle = angleWall;
+          window.editorVars.binder.update();
+        }
+      }
+    }
+
     if (mode == MODES.DOOR_MODE || mode == MODES.WINDOW_MODE) {
-      const snap = calculateSnap({
-        event, 
-        state: 0,
-        offset: offset.current,
-        originViewbox: {
-          x: originXViewbox,
-          y: originYViewbox,
-        },
-        tactile,
-      });
-      
+      const snap = getSnap(false);
+
       if (!snap) {
         return;
       }
@@ -993,16 +1113,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     } 
     
     if (hasAction == 1 && (mode == MODES.LINE_MODE || mode == MODES.PARTITION_MODE)) {
-      const snap = calculateSnap({
-        event, 
-        state: gridSnap,
-        offset: offset.current,
-        originViewbox: {
-          x: originXViewbox,
-          y: originYViewbox,
-        },
-        tactile,
-      });
+      const snap = getSnap(!!gridSnap);
 
       currentPositon.current.x = snap.x;
       currentPositon.current.y = snap.y;
@@ -1239,16 +1350,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
     }
 
     if (mode == MODES.SELECT_MODE && drag === 1) {
-      const snap = calculateSnap({
-        event, 
-        state: gridSnap,
-        offset: offset.current,
-        originViewbox: {
-          x: originXViewbox,
-          y: originYViewbox,
-        },
-        tactile,
-      });
+      const snap = getSnap(!!gridSnap);
 
       newCursor = "move";
 
@@ -1385,6 +1487,33 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
         currentPositon.current.x = snap.x;
         currentPositon.current.y = snap.y;
       }
+    }
+
+    if (mode == MODES.OBJECT_MODE) {
+      window.editorVars.OBJDATA.push(window.editorVars.binder);
+      window.editorVars.binder?.graph?.remove();
+
+      let targetBox = "boxcarpentry";
+
+      if (window.editorVars.OBJDATA[window.editorVars.OBJDATA.length - 1].class == "energy") {
+        targetBox = "boxEnergy";
+      }
+      if (window.editorVars.OBJDATA[window.editorVars.OBJDATA.length - 1].class == "furniture") {
+        targetBox = "boxFurniture";
+      }
+      
+      console.log('targetBox', targetBox);
+
+      document.getElementById(targetBox)?.append(window.editorVars.OBJDATA[window.editorVars.OBJDATA.length - 1].graph);
+      
+      window.editorVars.binder = undefined;
+
+      if (!multipleMode) {
+        modeChange("select_mode");
+      }
+
+      save();
+      gridMeausre = 20;
     }
 
     if (mode == MODES.DOOR_MODE || mode == MODES.WINDOW_MODE) {
@@ -1561,9 +1690,7 @@ const useLinearEngine = (ref?: React.RefObject<SVGAElement>, mode?: string) => {
       save();
     } // END BIND MODE
   
-
-
-    if (mode != "edit_room_mode") {
+    if (mode != MODES.EDIT_DOOR_MODE) {
       editor.showScaleBox();
       rib();
     }

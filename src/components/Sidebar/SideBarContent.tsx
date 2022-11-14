@@ -13,16 +13,23 @@ import {
   MenuList,
   MenuOptionGroup,
   MenuItemOption,
+  Slider,
+  SliderMark,
+  SliderTrack,
+  SliderFilledTrack,
+  Tooltip,
+  SliderThumb,
 } from "@chakra-ui/react";
 import * as classes from "./sidebar.module.css";
 // import { ReactText } from "react";
-import { $hasAction, $mode, $multipleMode, cursorChange, hasActionChange, modeChange, modeOptionsChange, multipleModeChange } from "../../state";
+import { $hasAction, $mode, $modeOptions, $multipleMode, cursorChange, hasActionChange, modeChange, modeOptionsChange, multipleModeChange } from "../../state";
 import { useThrottle } from "../../hooks/useThrottle";
 import { useStore } from "effector-react";
 import { MODES } from "../../libs/common";
 import { HiCursorClick } from "react-icons/hi";
-import { TbDoor, TbWindow } from "react-icons/tb";
+import { TbDoor, TbSofa, TbWindow } from "react-icons/tb";
 import { $themeName } from "../../state/theme";
+import { ModeOptions } from "../../types/editorVars";
 
 interface SidebarProps extends BoxProps {
   onClose: () => void;
@@ -30,12 +37,21 @@ interface SidebarProps extends BoxProps {
 
 export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
     const mode = useStore($mode);
+    const modeOptions = useStore($modeOptions);
     const multipleMode = useStore($multipleMode);
     
     const hasAction = useStore($hasAction);
     const themeName = useStore($themeName);
 
     const panelRef = useRef<Box>(null);
+
+
+
+
+    const [sliderValue, setSliderValue] = React.useState(5);
+    const [showTooltip, setShowTooltip] = React.useState(false);
+
+
 
     const handleClickSelectMode = useCallback(() => {
         cursorChange("default");
@@ -52,7 +68,7 @@ export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
         modeChange(MODES.PARTITION_MODE);
     }, []);
 
-    const handleClickDoorMode= useCallback((valueOrEvent) => {
+    const handleClickDoorMode= useCallback((valueOrEvent: React.MouseEventHandler<HTMLButtonElement> | ModeOptions | ModeOptions[]) => {
         if (typeof valueOrEvent === "string") {
             modeOptionsChange(valueOrEvent);
         }
@@ -61,13 +77,23 @@ export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
         modeChange(MODES.DOOR_MODE);
     }, []);
 
-    const handleClickWindowMode= useCallback((valueOrEvent) => {
+    const handleClickWindowMode= useCallback((valueOrEvent: React.MouseEventHandler<HTMLButtonElement> | ModeOptions | ModeOptions[]) => {
         if (typeof valueOrEvent === "string") {
             modeOptionsChange(valueOrEvent);
         }
 
         cursorChange("crosshair");
         modeChange(MODES.WINDOW_MODE);
+    }, []);
+
+    const handleClickObjectMode= useCallback((valueOrEvent: React.MouseEventHandler<HTMLButtonElement> | ModeOptions | ModeOptions[]) => {
+        if (typeof valueOrEvent === "string") {
+            console.log('valueOrEvent', valueOrEvent);
+            modeOptionsChange(valueOrEvent);
+        }
+
+        cursorChange("crosshair");
+        modeChange(MODES.OBJECT_MODE);
     }, []);
 
     const handleMultipleModeChange = useCallback(() => multipleModeChange(), []);
@@ -106,6 +132,10 @@ export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           panelRef.current?.removeEventListener("mousemove", throttleMouseMove);
         };
     }, [throttleMouseMove]);
+
+    console.log(mode === MODES.OBJECT_MODE);
+    console.log(modeOptions === ModeOptions.OfficeTable);
+    console.log(modeOptions);
 
     return (
         <Box
@@ -160,7 +190,7 @@ export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                 Пергородка
             </Button>
 
-            <Menu closeOnSelect={false}>
+            <Menu closeOnSelect={true}>
                 <MenuButton 
                     as={Button}               
                     colorScheme={themeName} 
@@ -168,34 +198,32 @@ export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                     className="btn btn-default fully"
                     title="Добавить дверь"
                     leftIcon={<TbDoor />}
-                    onClick={handleClickDoorMode}
                 >
                     Добавить дверь
                 </MenuButton>
                 <MenuList>
                     <MenuOptionGroup 
-                        defaultValue='aperture' 
                         title='Добавить дверь' 
                         type='radio' 
                         onChange={handleClickDoorMode}
                     >
-                        <MenuItemOption value='aperture' >
+                        <MenuItemOption value={ModeOptions.Aperture} >
                             Дверьной проем
                         </MenuItemOption>
-                        <MenuItemOption value='simple'>
+                        <MenuItemOption value={ModeOptions.Simple}>
                             Простая дверь
                         </MenuItemOption>
-                        <MenuItemOption value='double'>
+                        <MenuItemOption value={ModeOptions.Double}>
                             Двойная дверь
                         </MenuItemOption>
-                        <MenuItemOption value='pocket'>
+                        <MenuItemOption value={ModeOptions.Pocket}>
                             Слайдер
                         </MenuItemOption>
                     </MenuOptionGroup>
                 </MenuList>
             </Menu>
 
-            <Menu closeOnSelect={false}>
+            <Menu closeOnSelect={true}>
                 <MenuButton 
                     as={Button}               
                     colorScheme={themeName} 
@@ -203,27 +231,82 @@ export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                     className="btn btn-default fully"
                     title="Добавить окно"
                     leftIcon={<TbWindow />}
-                    onClick={handleClickWindowMode}
                 >
                     Добавить окно
                 </MenuButton>
                 <MenuList>
-                    <MenuOptionGroup defaultValue='fix' title='Добавить окно' type='radio' onChange={handleClickWindowMode}>
-                        <MenuItemOption value='fix'>
+                    <MenuOptionGroup title='Добавить окно' type='radio' onChange={handleClickWindowMode}>
+                        <MenuItemOption value={ModeOptions.Fix}>
                             Фиксированное стекло
                         </MenuItemOption>
-                        <MenuItemOption value='flap'>
+                        <MenuItemOption value={ModeOptions.Flap}>
                             Простое окно
                         </MenuItemOption>
-                        <MenuItemOption value='twin'>
+                        <MenuItemOption value={ModeOptions.Twin}>
                             Двойное окно
                         </MenuItemOption>
-                        <MenuItemOption value='bay'>
+                        <MenuItemOption value={ModeOptions.Bay}>
                             Слайдер
                         </MenuItemOption>
                     </MenuOptionGroup>
                 </MenuList>
             </Menu>
+
+            <Menu closeOnSelect={true}>
+                <MenuButton 
+                    as={Button}               
+                    colorScheme={themeName} 
+                    variant={mode === MODES.OBJECT_MODE ? "solid" : "outline"}
+                    className="btn btn-default fully"
+                    title="Добавить мебель"
+                    leftIcon={<TbSofa />}
+                >
+                    Добавить мебель
+                </MenuButton>
+                <MenuList>
+                    <MenuOptionGroup title='Добавить мебель' type='radio' onChange={handleClickObjectMode}>
+                        <MenuItemOption value={ModeOptions.OfficeTable}>
+                            Рабочий офисный Стол
+                        </MenuItemOption>
+                    </MenuOptionGroup>
+                </MenuList>
+            </Menu>
+
+            {(mode === MODES.OBJECT_MODE && modeOptions === ModeOptions.OfficeTable) && (
+                <Slider
+                    id='slider'
+                    defaultValue={5}
+                    min={0}
+                    max={360}
+                    colorScheme='teal'
+                    onChange={(v) => setSliderValue(v)}
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                >
+                    <SliderMark value={90} mt='1' ml='-2.5' fontSize='sm'>
+                        90°
+                    </SliderMark>
+                    <SliderMark value={180} mt='1' ml='-2.5' fontSize='sm'>
+                        180°
+                    </SliderMark>
+                    <SliderMark value={270} mt='1' ml='-2.5' fontSize='sm'>
+                        270°
+                    </SliderMark>
+                    <SliderTrack>
+                    <SliderFilledTrack />
+                    </SliderTrack>
+                    <Tooltip
+                        hasArrow
+                        bg='teal.500'
+                        color='white'
+                        placement='top'
+                        isOpen={showTooltip}
+                        label={`${sliderValue}%`}
+                    >
+                        <SliderThumb />
+                    </Tooltip>
+                </Slider>
+            )}
 
             <Checkbox isChecked={multipleMode} onChange={handleMultipleModeChange}>
                 Множество действий

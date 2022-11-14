@@ -4,8 +4,10 @@ export const enum MODES {
     SELECT_MODE = "select_mode",
     BIND_MODE = "bind_mode",
 
+    // OBJECTS
     DOOR_MODE = "door_mode",
     WINDOW_MODE = "window_mode",
+    OBJECT_MODE = "object_mode",
 
     //Edit mods
     EDIT_DOOR_MODE = "edit_door_mode",
