@@ -64,15 +64,15 @@ export const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
             hasActionChange(0);
             
             if (window.editorVars.binder) {
-            window.editorVars.binder.remove();
-            window.editorVars.binder = undefined;
+                window.editorVars.binder.remove();
+                window.editorVars.binder = undefined;
             }
 
             document.getElementById("linetemp")?.remove();
             document.getElementById("line_construc")?.remove();
 
             if (window.editorVars.lengthTemp) {
-            window.editorVars.lengthTemp.remove();
+                window.editorVars.lengthTemp.remove();
             }
 
             window.editorVars.lengthTemp = undefined;

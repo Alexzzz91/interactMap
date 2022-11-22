@@ -45,13 +45,26 @@ export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
     const panelRef = useRef<Box>(null);
 
-
-
-
     const [sliderValue, setSliderValue] = React.useState(5);
     const [showTooltip, setShowTooltip] = React.useState(false);
+    const [gridMeausre, setGridMeausre] = React.useState(20);
+    const [showGridMeausreTooltip, setShowGridMeausreTooltip] = React.useState(false);
 
+    const handleSetSliderValue = useCallback((sliderValue) => {
+        setSliderValue(sliderValue);
+        window.editorVars.binder.angle = sliderValue;
+        window.editorVars.angle = sliderValue;
+        // var objTarget = binder.obj;
+        // objTarget.angle = sliderValue;
+        // objTarget.update();
+        // binder.angle = sliderValue;
+        // binder.update();
+    }, []);
 
+    const handleSetGridMeausre = useCallback((sliderValue) => {
+        setGridMeausre(sliderValue);
+        window.editorVars.gridMeausre = sliderValue;
+    }, []);
 
     const handleClickSelectMode = useCallback(() => {
         cursorChange("default");
@@ -271,42 +284,109 @@ export const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                     </MenuOptionGroup>
                 </MenuList>
             </Menu>
+            
+            <br/>
+            <br/>
+            <br/>
 
             {(mode === MODES.OBJECT_MODE && modeOptions === ModeOptions.OfficeTable) && (
-                <Slider
-                    id='slider'
-                    defaultValue={5}
-                    min={0}
-                    max={360}
-                    colorScheme='teal'
-                    onChange={(v) => setSliderValue(v)}
-                    onMouseEnter={() => setShowTooltip(true)}
-                    onMouseLeave={() => setShowTooltip(false)}
-                >
-                    <SliderMark value={90} mt='1' ml='-2.5' fontSize='sm'>
-                        90°
-                    </SliderMark>
-                    <SliderMark value={180} mt='1' ml='-2.5' fontSize='sm'>
-                        180°
-                    </SliderMark>
-                    <SliderMark value={270} mt='1' ml='-2.5' fontSize='sm'>
-                        270°
-                    </SliderMark>
-                    <SliderTrack>
-                    <SliderFilledTrack />
-                    </SliderTrack>
-                    <Tooltip
-                        hasArrow
-                        bg='teal.500'
-                        color='white'
-                        placement='top'
-                        isOpen={showTooltip}
-                        label={`${sliderValue}%`}
+                <>
+                    <Text>
+                        Угол для установки стола
+                    </Text>
+                    <Slider
+                        id='slider'
+                        defaultValue={5}
+                        min={0}
+                        max={360}
+                        step={30}
+                        colorScheme='teal'
+                        onChange={handleSetSliderValue}
+                        onMouseEnter={() => setShowTooltip(true)}
+                        onMouseLeave={() => setShowTooltip(false)}
                     >
-                        <SliderThumb />
-                    </Tooltip>
-                </Slider>
+                        <SliderMark value={90} mt='1' ml='-2.5' fontSize='sm'>
+                            90°
+                        </SliderMark>
+                        <SliderMark value={180} mt='1' ml='-2.5' fontSize='sm'>
+                            180°
+                        </SliderMark>
+                        <SliderMark value={270} mt='1' ml='-2.5' fontSize='sm'>
+                            270°
+                        </SliderMark>
+                        <SliderTrack>
+                            <SliderFilledTrack />
+                        </SliderTrack>
+                        <Tooltip
+                            hasArrow
+                            bg='teal.500'
+                            color='white'
+                            placement='top'
+                            isOpen={showTooltip}
+                            label={`${sliderValue}%`}
+                        >
+                            <SliderThumb />
+                        </Tooltip>
+                    </Slider>
+                </>
             )}
+
+            <br/>
+            <br/>
+            <br/>
+
+            <Text>
+                Шаг в сетке
+            </Text>
+
+            <Slider
+                id='slider'
+                value={gridMeausre}
+                min={1}
+                max={40}
+                step={1}
+                colorScheme='teal'
+                onChange={handleSetGridMeausre}
+                onMouseEnter={() => setShowGridMeausreTooltip(true)}
+                onMouseLeave={() => setShowGridMeausreTooltip(false)}
+            >
+                <SliderMark value={1} mt='1' ml='-2.5' fontSize='sm'>
+                    1
+                </SliderMark>
+                <SliderMark value={5} mt='1' ml='-2.5' fontSize='sm'>
+                    5
+                </SliderMark>
+                <SliderMark value={15} mt='1' ml='-2.5' fontSize='sm'>
+                    15
+                </SliderMark>
+                <SliderMark value={20} mt='1' ml='-2.5' fontSize='sm'>
+                    20
+                </SliderMark>
+                <SliderMark value={30} mt='1' ml='-2.5' fontSize='sm'>
+                    30
+                </SliderMark>
+                <SliderMark value={40} mt='1' ml='-2.5' fontSize='sm'>
+                    40
+                </SliderMark>
+
+                <SliderTrack>
+                    <SliderFilledTrack />
+                </SliderTrack>
+                <Tooltip
+                    hasArrow
+                    bg='teal.500'
+                    color='white'
+                    placement='top'
+                    isOpen={showGridMeausreTooltip}
+                    label={gridMeausre}
+                >
+                    <SliderThumb />
+                </Tooltip>
+            </Slider>
+            
+            <br/>
+            <br/>
+            <br/>
 
             <Checkbox isChecked={multipleMode} onChange={handleMultipleModeChange}>
                 Множество действий

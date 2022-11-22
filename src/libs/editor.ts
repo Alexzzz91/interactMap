@@ -69,6 +69,9 @@ const editor = {
     this.limit = [];
     this.hinge = hinge; // normal, reverse
     this.graph = qSVG.create("none", "g", attributes);
+    this.dataset = {
+      "place-id": attributes["data-test-id"],
+    };
     this.scale = { x: 1, y: 1 };
     this.value = value;
     this.size = size;
@@ -82,7 +85,7 @@ const editor = {
       sizeObj: size,
       thickObj: thick,
       dividerObj: value,
-      textValue: attributes['data-test-id']
+      textValue: attributes["data-test-id"]
     });
     
     let blank;
@@ -99,15 +102,42 @@ const editor = {
       }
       console.log(cc[tt].text);
       if (cc[tt].text) {
+        let additionalAttrs;
+
+        if (type === "officeTable"){
+          if(angle === 90) {
+            additionalAttrs = {
+              transform: "rotate(270,00,0)",
+              x: "-17",
+              y: "10", 
+            };
+          }
+          if(angle === 180) {
+            additionalAttrs = {
+              transform: "rotate(180,00,0)",
+              x: "-7",
+              y: "-15", 
+            };
+          }
+          if(angle === 270) {
+            additionalAttrs = {
+              transform: "rotate(90,00,0)",
+              x: "17",
+              y: "-35", 
+            };
+          }
+        } 
+
         blank = qSVG.create("none", "text", {
           x: cc[tt].x,
           y: cc[tt].y,
           "font-size": cc[tt].fontSize,
           stroke: cc[tt].stroke,
           "stroke-width": cc[tt].strokeWidth,
-          "font-family": "roboto",
+          "font-family": "arial",
           "text-anchor": "middle",
           fill: cc[tt].fill,
+          ...additionalAttrs,
         });
         console.log("blank", blank);
         blank?.textContent = cc[tt].text;
@@ -388,6 +418,8 @@ const editor = {
     for (let pp = 0; pp < Rooms.polygons.length; pp++) {
       let foundRoom = false;
       let roomId;
+
+      console.log("window.editorVars.ROOM", window.editorVars.ROOM);
       for (let rr = 0; rr < window.editorVars.ROOM.length; rr++) {
         roomId = rr;
         let countCoords = Rooms.polygons[pp].coords.length;
@@ -447,6 +479,8 @@ const editor = {
     }
 
     const toSplice = [];
+    console.log("window.editorVars.ROOM", window.editorVars.ROOM);
+    
     for (let rr = 0; rr < window.editorVars.ROOM.length; rr++) {
       let found = true;
       for (let pp = 0; pp < Rooms.polygons.length; pp++) {
@@ -481,14 +515,16 @@ const editor = {
         if (countRoom == 0) {
           found = true;
           break;
-        } else found = false;
+        } else {
+          found = false;
+        }
       }
-      if (!found) toSplice.push(rr);
+      if (!found) {
+        toSplice.push(rr);
+      }
     }
-
-    toSplice.sort(function (a, b) {
-      return b - a;
-    });
+    
+    toSplice.sort((a, b) => b - a);
     
     for (let ss = 0; ss < toSplice.length; ss++) {
       window.editorVars.ROOM.splice(toSplice[ss], 1);
@@ -585,12 +621,12 @@ const editor = {
     }
     if (globalArea <= 0) {
       globalArea = 0;
-      document.getElementById("areaValue")?.innerHTML = "";
+      // document.getElementById("areaValue")?.innerHTML = "";
     } else {
-      document.getElementById("areaValue")?.innerHTML = 
-        `<i class=\"fa fa-map-o\" aria-hidden=\"true\"></i>
-          ${(globalArea / 3600).toFixed(1)} m²
-        `;
+      // document.getElementById("areaValue")?.innerHTML = 
+      //   `<i class=\"fa fa-map-o\" aria-hidden=\"true\"></i>
+      //     ${(globalArea / 3600).toFixed(1)} m²
+      //   `;
     }
   },
 
@@ -637,7 +673,7 @@ const editor = {
           const eqInter = editor.createEquationFromWall(S[k].wall);
           let angleInter = 90; // TO PASS TEST
           if (action == "move") {
-            angleInter = qSVG.angleBetweenEquations(eqInter.A, equation2.A);
+            angleInter = qSVG.angleBetweenEquations(eqInter.A, window.editorVars.equation2.A);
           }
           if (
             S[k].type == "start" &&
@@ -675,7 +711,7 @@ const editor = {
           const eqInter = editor.createEquationFromWall(E[k].wall);
           let angleInter = 90; // TO PASS TEST
           if (action == "move") {
-            angleInter = qSVG.angleBetweenEquations(eqInter.A, equation2.A);
+            angleInter = qSVG.angleBetweenEquations(eqInter.A, window.editorVars.equation2.A);
           }
           if (
             E[k].type == "end" &&
@@ -949,6 +985,8 @@ const editor = {
     
     clearHtmlTagById("boxRoom");
     clearHtmlTagById("boxSurface");
+
+    console.log("architect Rooms", Rooms);
 
     return editor.roomMaker(Rooms);
   },

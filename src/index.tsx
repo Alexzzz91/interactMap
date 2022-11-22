@@ -9,6 +9,7 @@ root.render(<App />);
 window.editorVars = {
   WALLS: [],
   ROOM: [],
+  ROOMS: [],
   OBJDATA: [],
   HISTORY: [],
   lineIntersection: undefined,
@@ -16,7 +17,14 @@ window.editorVars = {
   lengthTemp: undefined,
   METER: 60,
   factor: 1,
+  wallListRun: [],
+  equation1: undefined,
+  equation2: undefined,
 
+  // еще думаю об этом, нружно ли так делать
+  gridMeausre: 20,
+  
+  
   // wallSize: 20,
   // partitionSize: 8,
   // drag: "off",

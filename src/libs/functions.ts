@@ -630,7 +630,7 @@ const load = (index = window.editorVars.HISTORY.index, boot = false) => {
   if (window.editorVars.HISTORY.length == 0 && !boot) {
     return false;
   }
-  for (var k in window.editorVars.OBJDATA) {
+  for (const k in window.editorVars.OBJDATA) {
     window.editorVars.OBJDATA[k].graph.remove();
   }
   window.editorVars.OBJDATA = [];
@@ -644,8 +644,19 @@ const load = (index = window.editorVars.HISTORY.index, boot = false) => {
     console.log("load JSON.parse", error);
   }
 
-  for (var k in historyTemp.objData) {
+  let tableIndex = 0;
+  for (const k in historyTemp.objData) {
     const OO = historyTemp.objData[k];
+    
+    let attributes = undefined;
+
+    if (OO.type == "officeTable") {
+      tableIndex++;
+
+      attributes = {
+        "data-test-id": tableIndex
+      };
+    }
     // if (OO.family == 'energy') OO.family = 'byObject';
     const obj = new editor.obj2D({
       family: OO.family,
@@ -661,6 +672,7 @@ const load = (index = window.editorVars.HISTORY.index, boot = false) => {
       offset: 1,
       originXViewbox: 0,
       originYViewbox: 0,
+      attributes,
     }
 
     );
@@ -672,7 +684,7 @@ const load = (index = window.editorVars.HISTORY.index, boot = false) => {
     obj.update();
   }
   window.editorVars.WALLS = historyTemp.wallData;
-  for (var k in window.editorVars.WALLS) {
+  for (const k in window.editorVars.WALLS) {
     if (window.editorVars.WALLS[k].child != null) {
       window.editorVars.WALLS[k].child = window.editorVars.WALLS[window.editorVars.WALLS[k].child];
     }
@@ -879,7 +891,7 @@ const carpentryCalc = ({
   sizeObj, 
   thickObj, 
   dividerObj = 10,
-  textValue = '',
+  textValue = "",
 }) => {
   const construc = [];
   construc.params = {};
@@ -2002,7 +2014,7 @@ const carpentryCalc = ({
     });
 
     construc.push({
-      path: `M45 25H.10V.10h45z`,
+      path: "M45 25H.10V.10h45z",
         // "M " +
         // -sizeObj / 2 +
         // "," +
@@ -2024,7 +2036,7 @@ const carpentryCalc = ({
       stroke: "#25213F",
     });
     construc.push({
-      path: `M40 8H5V6h35zM34 31H10v-2h24zM30 29H14v-4h16z`,
+      path: "M40 8H5V6h35zM34 31H10v-2h24zM30 29H14v-4h16z",
         // "M " +
         // -sizeObj / 2 +
         // "," +

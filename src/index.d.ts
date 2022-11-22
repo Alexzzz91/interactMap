@@ -16,6 +16,15 @@ declare global {
             lengthTemp?: undefined;
             METER: number;
             factor: number;
+            wallListRun: any[];
+            equation1?: {
+                A: string; 
+                B: string;
+            };
+            equation2?: {
+                A: string; 
+                B: string;
+            };
         };
     }
 }
